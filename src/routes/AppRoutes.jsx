@@ -7,6 +7,8 @@ import {
 import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
 import Hero from "../components/Hero/Hero";
+import FeaturedProducts from "../components/Home/FeaturedProducts";
+import AddProduct from "../pages/Seller/AddProduct";
 
 /* =========================================================
    HOME PAGE
@@ -15,16 +17,21 @@ import Hero from "../components/Hero/Hero";
 const Home = () => {
   return (
     <>
-      {/* PREMIUM 3D HERO */}
+      {/* =================================================
+          PREMIUM 3D HERO
+      ================================================= */}
       <Hero />
 
-      {/* ================================================
-          NEXT HOME SECTIONS
-          পরে এখানে Featured Products,
-          Categories, Deals ইত্যাদি আসবে
+      {/* =================================================
+          FEATURED PRODUCTS
       ================================================= */}
+      <FeaturedProducts />
 
-      <section className="min-h-[400px] bg-[#05020b]" />
+      {/* =================================================
+          NEXT HOME SECTIONS
+          Categories, Deals, Top Rated etc. পরে আসবে
+      ================================================= */}
+      <section className="min-h-[200px] bg-[#05020b]" />
     </>
   );
 };
@@ -37,7 +44,9 @@ const Placeholder = ({ title }) => {
   return (
     <main className="min-h-screen bg-[#05020b] px-5 pb-20 pt-36 text-white">
       <div className="mx-auto max-w-7xl">
+
         <div className="rounded-3xl border border-violet-400/10 bg-white/[0.025] p-10 shadow-[0_20px_80px_rgba(124,58,237,0.08)] backdrop-blur-xl">
+
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-violet-400/60">
             AmitShop
           </p>
@@ -50,6 +59,7 @@ const Placeholder = ({ title }) => {
             This page is part of the AmitShop premium shopping
             experience. More features are coming soon.
           </p>
+
         </div>
       </div>
     </main>
@@ -63,24 +73,32 @@ const Placeholder = ({ title }) => {
 const AppRoutes = () => {
   return (
     <BrowserRouter>
-      {/* ================================================
+
+      {/* =================================================
           NAVBAR
       ================================================= */}
 
       <Navbar />
 
-      {/* ================================================
+      {/* =================================================
           ROUTES
       ================================================= */}
 
       <Routes>
-        {/* HOME */}
+
+        {/* =================================================
+            HOME
+        ================================================= */}
+
         <Route
           path="/"
           element={<Home />}
         />
 
-        {/* PRODUCTS */}
+        {/* =================================================
+            PRODUCTS
+        ================================================= */}
+
         <Route
           path="/products"
           element={
@@ -88,7 +106,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* DEALS */}
+        {/* =================================================
+            DEALS
+        ================================================= */}
+
         <Route
           path="/deals"
           element={
@@ -96,7 +117,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* CATEGORIES */}
+        {/* =================================================
+            CATEGORIES
+        ================================================= */}
+
         <Route
           path="/categories"
           element={
@@ -104,7 +128,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* ABOUT */}
+        {/* =================================================
+            ABOUT
+        ================================================= */}
+
         <Route
           path="/about"
           element={
@@ -112,7 +139,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* CONTACT */}
+        {/* =================================================
+            CONTACT
+        ================================================= */}
+
         <Route
           path="/contact"
           element={
@@ -120,7 +150,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* WISHLIST */}
+        {/* =================================================
+            WISHLIST
+        ================================================= */}
+
         <Route
           path="/wishlist"
           element={
@@ -128,7 +161,10 @@ const AppRoutes = () => {
           }
         />
 
-        {/* CART */}
+        {/* =================================================
+            CART
+        ================================================= */}
+
         <Route
           path="/cart"
           element={
@@ -136,20 +172,35 @@ const AppRoutes = () => {
           }
         />
 
-        {/* LOGIN */}
+        {/* =================================================
+            LOGIN
+        ================================================= */}
+
         <Route
           path="/login"
           element={
             <Placeholder title="Login" />
           }
         />
+
+        {/* =================================================
+            SELLER / ADMIN
+            ADD PRODUCT
+        ================================================= */}
+
+        <Route
+          path="/seller/products/new"
+          element={<AddProduct />}
+        />
+
       </Routes>
 
-      {/* ================================================
+      {/* =================================================
           PREMIUM FOOTER
       ================================================= */}
 
       <Footer />
+
     </BrowserRouter>
   );
 };
