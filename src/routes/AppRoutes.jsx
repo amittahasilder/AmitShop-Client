@@ -8,6 +8,8 @@ import Navbar from "../components/Navbar/Navbar";
 import Footer from "../components/Footer/Footer";
 import Hero from "../components/Hero/Hero";
 import FeaturedProducts from "../components/Home/FeaturedProducts";
+
+import Products from "../pages/Products/Products";
 import AddProduct from "../pages/Seller/AddProduct";
 
 /* =========================================================
@@ -44,9 +46,7 @@ const Placeholder = ({ title }) => {
   return (
     <main className="min-h-screen bg-[#05020b] px-5 pb-20 pt-36 text-white">
       <div className="mx-auto max-w-7xl">
-
         <div className="rounded-3xl border border-violet-400/10 bg-white/[0.025] p-10 shadow-[0_20px_80px_rgba(124,58,237,0.08)] backdrop-blur-xl">
-
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-violet-400/60">
             AmitShop
           </p>
@@ -59,7 +59,6 @@ const Placeholder = ({ title }) => {
             This page is part of the AmitShop premium shopping
             experience. More features are coming soon.
           </p>
-
         </div>
       </div>
     </main>
@@ -73,23 +72,18 @@ const Placeholder = ({ title }) => {
 const AppRoutes = () => {
   return (
     <BrowserRouter>
-
       {/* =================================================
           NAVBAR
       ================================================= */}
-
       <Navbar />
 
       {/* =================================================
           ROUTES
       ================================================= */}
-
       <Routes>
-
         {/* =================================================
             HOME
         ================================================= */}
-
         <Route
           path="/"
           element={<Home />}
@@ -98,18 +92,23 @@ const AppRoutes = () => {
         {/* =================================================
             PRODUCTS
         ================================================= */}
-
         <Route
           path="/products"
-          element={
-            <Placeholder title="Products" />
-          }
+          element={<Products />}
+        />
+
+        {/* =================================================
+            SELLER / ADMIN
+            ADD PRODUCT
+        ================================================= */}
+        <Route
+          path="/seller/products/new"
+          element={<AddProduct />}
         />
 
         {/* =================================================
             DEALS
         ================================================= */}
-
         <Route
           path="/deals"
           element={
@@ -120,7 +119,6 @@ const AppRoutes = () => {
         {/* =================================================
             CATEGORIES
         ================================================= */}
-
         <Route
           path="/categories"
           element={
@@ -131,7 +129,6 @@ const AppRoutes = () => {
         {/* =================================================
             ABOUT
         ================================================= */}
-
         <Route
           path="/about"
           element={
@@ -142,7 +139,6 @@ const AppRoutes = () => {
         {/* =================================================
             CONTACT
         ================================================= */}
-
         <Route
           path="/contact"
           element={
@@ -153,7 +149,6 @@ const AppRoutes = () => {
         {/* =================================================
             WISHLIST
         ================================================= */}
-
         <Route
           path="/wishlist"
           element={
@@ -164,7 +159,6 @@ const AppRoutes = () => {
         {/* =================================================
             CART
         ================================================= */}
-
         <Route
           path="/cart"
           element={
@@ -175,7 +169,6 @@ const AppRoutes = () => {
         {/* =================================================
             LOGIN
         ================================================= */}
-
         <Route
           path="/login"
           element={
@@ -184,23 +177,20 @@ const AppRoutes = () => {
         />
 
         {/* =================================================
-            SELLER / ADMIN
-            ADD PRODUCT
+            404 FALLBACK
         ================================================= */}
-
         <Route
-          path="/seller/products/new"
-          element={<AddProduct />}
+          path="*"
+          element={
+            <Placeholder title="Page Not Found" />
+          }
         />
-
       </Routes>
 
       {/* =================================================
           PREMIUM FOOTER
       ================================================= */}
-
       <Footer />
-
     </BrowserRouter>
   );
 };
