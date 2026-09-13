@@ -1,15 +1,30 @@
-import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import useAuthStore from "../../store/authStore";
 
 const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [productsOpen, setProductsOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(true);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const navigate = useNavigate();
+  const {
+    user,
+    isAuthenticated,
+    getCurrentUser,
+    logout,
+  } = useAuthStore();
+
+  useEffect(() => {
+    getCurrentUser();
+  }, [getCurrentUser]);
 
   const closeMenus = () => {
     setProductsOpen(false);
     setCategoriesOpen(false);
+    setProfileOpen(false);
     setMobileOpen(false);
   };
 
@@ -1105,57 +1120,188 @@ const Navbar = () => {
                 </span>
               </button>
 
-              {/* LOGIN */}
+              {/* =================================================
+                  AUTH / PROFILE
+              ================================================== */}
 
-              <Link
-                to="/login"
-                className="
-                  group/login
-                  ml-1
-                  flex items-center gap-2
+              {isAuthenticated ? (
+                <div className="relative ml-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setProfileOpen(!profileOpen);
+                      setProductsOpen(false);
+                      setCategoriesOpen(false);
+                    }}
+                    className="
+                      group/profile
+                      flex items-center gap-2.5
+                      rounded-xl
+                      border border-violet-400/20
+                      bg-gradient-to-r
+                      from-violet-600/15
+                      via-purple-600/10
+                      to-fuchsia-600/10
+                      px-3 py-2
+                      text-left
+                      transition-all duration-300
+                      hover:-translate-y-0.5
+                      hover:border-violet-400/35
+                      hover:bg-violet-500/15
+                    "
+                  >
+                    <span
+                      className="
+                        flex h-8 w-8 items-center justify-center
+                        rounded-lg
+                        bg-gradient-to-br
+                        from-violet-500
+                        via-purple-600
+                        to-fuchsia-600
+                        text-xs font-black text-white
+                        shadow-[0_0_20px_rgba(139,92,246,0.35)]
+                        transition-transform duration-300
+                        group-hover/profile:scale-105
+                      "
+                    >
+                      {(user?.name || "U").charAt(0).toUpperCase()}
+                    </span>
 
-                  rounded-xl
+                    <span className="hidden max-w-[100px] sm:block">
+                      <span className="block truncate text-xs font-bold text-white/90">
+                        {user?.name || "User"}
+                      </span>
+                      <span className="block text-[9px] uppercase tracking-wider text-violet-300/50">
+                        {user?.role || "customer"}
+                      </span>
+                    </span>
 
-                  border
-                  border-violet-400/20
+                    <span
+                      className={`text-[10px] text-white/45 transition-transform duration-300 ${
+                        profileOpen ? "rotate-180" : ""
+                      }`}
+                    >
+                      ▾
+                    </span>
+                  </button>
 
-                  bg-gradient-to-r
-                  from-violet-600
-                  via-purple-600
-                  to-fuchsia-600
+                  {profileOpen && (
+                    <div
+                      className="
+                        absolute right-0 top-[calc(100%+12px)]
+                        w-64 rounded-2xl
+                        border border-violet-400/20
+                        bg-gradient-to-br
+                        from-[#16082b]/98
+                        via-[#0b0615]/98
+                        to-[#180820]/98
+                        p-2
+                        shadow-[0_30px_90px_rgba(0,0,0,0.65)]
+                        backdrop-blur-3xl
+                      "
+                    >
+                      <div className="mb-1 rounded-xl border border-white/5 bg-white/[0.03] p-3">
+                        <p className="truncate text-sm font-bold text-white">
+                          {user?.name || "AmitShop User"}
+                        </p>
+                        <p className="mt-1 truncate text-[10px] text-white/35">
+                          {user?.email || ""}
+                        </p>
+                      </div>
 
-                  px-4 py-2.5
+                      <Link
+                        to="/profile"
+                        onClick={closeMenus}
+                        className="
+                          flex items-center gap-3 rounded-xl p-3
+                          text-sm font-semibold text-white/70
+                          transition-all duration-300
+                          hover:translate-x-1 hover:bg-violet-500/10 hover:text-white
+                        "
+                      >
+                        <span className="text-base">◉</span>
+                        My Profile
+                      </Link>
 
-                  text-[13px]
-                  font-bold
-                  text-white
+                      <Link
+                        to="/wishlist"
+                        onClick={closeMenus}
+                        className="
+                          flex items-center gap-3 rounded-xl p-3
+                          text-sm font-semibold text-white/70
+                          transition-all duration-300
+                          hover:translate-x-1 hover:bg-pink-500/10 hover:text-white
+                        "
+                      >
+                        <span className="text-base">♡</span>
+                        Wishlist
+                      </Link>
 
-                  shadow-[0_8px_30px_rgba(124,58,237,0.3)]
+                      <Link
+                        to="/cart"
+                        onClick={closeMenus}
+                        className="
+                          flex items-center gap-3 rounded-xl p-3
+                          text-sm font-semibold text-white/70
+                          transition-all duration-300
+                          hover:translate-x-1 hover:bg-violet-500/10 hover:text-white
+                        "
+                      >
+                        <span className="text-base">🛒</span>
+                        Cart
+                      </Link>
 
-                  transition-all
-                  duration-300
+                      <div className="my-1 h-px bg-white/5" />
 
-                  hover:-translate-y-0.5
-                  hover:border-violet-300/30
-
-                  hover:shadow-[0_14px_45px_rgba(168,85,247,0.52)]
-
-                  active:translate-y-0
-                "
-              >
-                <span
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await logout();
+                          closeMenus();
+                          navigate("/");
+                        }}
+                        className="
+                          flex w-full items-center gap-3 rounded-xl p-3
+                          text-sm font-semibold text-red-300/80
+                          transition-all duration-300
+                          hover:translate-x-1 hover:bg-red-500/10 hover:text-red-200
+                        "
+                      >
+                        <span className="text-base">↪</span>
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to="/login"
                   className="
-                    transition-transform
-                    duration-300
-
-                    group-hover/login:translate-x-0.5
+                    group/login
+                    ml-1
+                    flex items-center gap-2
+                    rounded-xl
+                    border border-violet-400/20
+                    bg-gradient-to-r
+                    from-violet-600
+                    via-purple-600
+                    to-fuchsia-600
+                    px-4 py-2.5
+                    text-[13px] font-bold text-white
+                    shadow-[0_8px_30px_rgba(124,58,237,0.3)]
+                    transition-all duration-300
+                    hover:-translate-y-0.5
+                    hover:border-violet-300/30
+                    hover:shadow-[0_14px_45px_rgba(168,85,247,0.52)]
+                    active:translate-y-0
                   "
                 >
-                  →
-                </span>
-
-                Login
-              </Link>
+                  <span className="transition-transform duration-300 group-hover/login:translate-x-0.5">
+                    →
+                  </span>
+                  Login
+                </Link>
+              )}
             </div>
 
             {/* =================================================
@@ -1385,46 +1531,62 @@ const Navbar = () => {
                 </button>
               </div>
 
-              {/* Mobile Login */}
+              {/* Mobile Auth */}
 
-              <Link
-                to="/login"
-                onClick={closeMenus}
-                className="
-                  mt-3
-                  flex
-                  items-center
-                  justify-center
-                  gap-2
+              {isAuthenticated ? (
+                <div className="mt-3 rounded-2xl border border-violet-400/10 bg-white/[0.025] p-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 text-sm font-black text-white">
+                      {(user?.name || "U").charAt(0).toUpperCase()}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-bold text-white">
+                        {user?.name || "User"}
+                      </p>
+                      <p className="text-[10px] uppercase tracking-wider text-violet-300/50">
+                        {user?.role || "customer"}
+                      </p>
+                    </div>
+                  </div>
 
-                  rounded-xl
+                  <Link
+                    to="/profile"
+                    onClick={closeMenus}
+                    className="mt-3 flex items-center justify-center rounded-xl border border-violet-400/15 bg-violet-500/10 py-3 text-sm font-semibold text-violet-200 transition-all duration-300 hover:bg-violet-500/20"
+                  >
+                    ◉ My Profile
+                  </Link>
 
-                  border
-                  border-violet-400/20
-
-                  bg-gradient-to-r
-                  from-violet-600
-                  via-purple-600
-                  to-fuchsia-600
-
-                  py-3
-
-                  text-sm
-                  font-bold
-                  text-white
-
-                  shadow-[0_8px_30px_rgba(124,58,237,0.3)]
-
-                  transition-all
-                  duration-300
-
-                  hover:-translate-y-0.5
-
-                  hover:shadow-[0_12px_40px_rgba(168,85,247,0.45)]
-                "
-              >
-                → Login to AmitShop
-              </Link>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      await logout();
+                      closeMenus();
+                      navigate("/");
+                    }}
+                    className="mt-2 flex w-full items-center justify-center rounded-xl border border-red-400/10 bg-red-500/5 py-3 text-sm font-semibold text-red-300 transition-all duration-300 hover:bg-red-500/10"
+                  >
+                    ↪ Logout
+                  </button>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={closeMenus}
+                  className="
+                    mt-3 flex items-center justify-center gap-2
+                    rounded-xl border border-violet-400/20
+                    bg-gradient-to-r from-violet-600 via-purple-600 to-fuchsia-600
+                    py-3 text-sm font-bold text-white
+                    shadow-[0_8px_30px_rgba(124,58,237,0.3)]
+                    transition-all duration-300
+                    hover:-translate-y-0.5
+                    hover:shadow-[0_12px_40px_rgba(168,85,247,0.45)]
+                  "
+                >
+                  → Login to AmitShop
+                </Link>
+              )}
             </div>
           </div>
 

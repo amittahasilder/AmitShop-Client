@@ -20,6 +20,25 @@ import AddProduct from "../pages/Seller/AddProduct";
 
 import Cart from "../pages/Cart/Cart";
 
+// =========================================================
+// WISHLIST
+// =========================================================
+
+import Wishlist from "../pages/Wishlist/Wishlist";
+
+// =========================================================
+// AUTH
+// =========================================================
+
+import Login from "../pages/Auth/Login";
+import Register from "../pages/Auth/Register";
+
+// =========================================================
+// PROTECTED ROUTE
+// =========================================================
+
+import ProtectedRoute from "./ProtectedRoute";
+
 /* =========================================================
    HOME PAGE
 ========================================================= */
@@ -59,6 +78,7 @@ const Placeholder = ({ title }) => {
     <main className="min-h-screen bg-[#05020b] px-5 pb-20 pt-36 text-white">
       <div className="mx-auto max-w-7xl">
         <div className="rounded-3xl border border-violet-400/10 bg-white/[0.025] p-10 shadow-[0_20px_80px_rgba(124,58,237,0.08)] backdrop-blur-xl">
+
           <p className="mb-3 text-xs font-bold uppercase tracking-[0.25em] text-violet-400/60">
             AmitShop
           </p>
@@ -71,6 +91,7 @@ const Placeholder = ({ title }) => {
             This page is part of the AmitShop premium shopping
             experience. More features are coming soon.
           </p>
+
         </div>
       </div>
     </main>
@@ -84,6 +105,7 @@ const Placeholder = ({ title }) => {
 const AppRoutes = () => {
   return (
     <BrowserRouter>
+
       {/* =================================================
           NAVBAR
       ================================================= */}
@@ -121,16 +143,6 @@ const AppRoutes = () => {
         <Route
           path="/products/:id"
           element={<ProductDetails />}
-        />
-
-        {/* =================================================
-            SELLER / ADMIN
-            ADD PRODUCT
-        ================================================= */}
-
-        <Route
-          path="/seller/products/new"
-          element={<AddProduct />}
         />
 
         {/* =================================================
@@ -178,35 +190,58 @@ const AppRoutes = () => {
         />
 
         {/* =================================================
-            WISHLIST
-        ================================================= */}
-
-        <Route
-          path="/wishlist"
-          element={
-            <Placeholder title="Wishlist" />
-          }
-        />
-
-        {/* =================================================
-            CART
-        ================================================= */}
-
-        <Route
-          path="/cart"
-          element={<Cart />}
-        />
-
-        {/* =================================================
             LOGIN
         ================================================= */}
 
         <Route
           path="/login"
-          element={
-            <Placeholder title="Login" />
-          }
+          element={<Login />}
         />
+
+        {/* =================================================
+            REGISTER / CREATE ACCOUNT
+        ================================================= */}
+
+        <Route
+          path="/register"
+          element={<Register />}
+        />
+
+        {/* =================================================
+            PROTECTED USER ROUTES
+        ================================================= */}
+
+        <Route element={<ProtectedRoute />}>
+
+          {/* =================================================
+              WISHLIST
+          ================================================= */}
+
+          <Route
+            path="/wishlist"
+            element={<Wishlist />}
+          />
+
+          {/* =================================================
+              CART
+          ================================================= */}
+
+          <Route
+            path="/cart"
+            element={<Cart />}
+          />
+
+          {/* =================================================
+              SELLER / ADMIN
+              ADD PRODUCT
+          ================================================= */}
+
+          <Route
+            path="/seller/products/new"
+            element={<AddProduct />}
+          />
+
+        </Route>
 
         {/* =================================================
             404 FALLBACK
@@ -226,6 +261,7 @@ const AppRoutes = () => {
       ================================================= */}
 
       <Footer />
+
     </BrowserRouter>
   );
 };
