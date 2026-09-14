@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import useAuthStore from "../../store/authStore";
@@ -22,14 +23,18 @@ const Login = () => {
   const [success, setSuccess] = useState("");
 
   // =========================================================
-  // REDIRECT IF ALREADY LOGGED IN
+  // REDIRECT AFTER AUTHENTICATION
   // =========================================================
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/", { replace: true });
+      const redirectPath = location.state?.from || "/";
+
+      navigate(redirectPath, {
+        replace: true,
+      });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, location.state]);
 
   // =========================================================
   // INPUT CHANGE
@@ -61,6 +66,10 @@ const Login = () => {
     const email = formData.email.trim();
     const password = formData.password;
 
+    // ---------------------------------------------------------
+    // VALIDATION
+    // ---------------------------------------------------------
+
     if (!email || !password) {
       setError("Email and password are required.");
       return;
@@ -71,26 +80,37 @@ const Login = () => {
       return;
     }
 
+    // ---------------------------------------------------------
+    // LOGIN API
+    // ---------------------------------------------------------
+
     const result = await login(email, password);
+
+    // ---------------------------------------------------------
+    // LOGIN FAILED
+    // ---------------------------------------------------------
 
     if (!result.success) {
       setError(result.message || "Login failed.");
       return;
     }
 
-    setSuccess("Login successful! Redirecting...");
-
     // ---------------------------------------------------------
-    // If user came from another protected page,
-    // return them there.
-    // Otherwise go to home.
+    // LOGIN SUCCESS
+    //
+    // Redirect is handled by the useEffect above.
+    // This allows protected-route redirects like:
+    //
+    // /products/manage
+    //       ↓
+    // /login
+    //       ↓
+    // successful login
+    //       ↓
+    // /products/manage
     // ---------------------------------------------------------
 
-    const redirectPath = location.state?.from || "/";
-
-    setTimeout(() => {
-      navigate(redirectPath, { replace: true });
-    }, 700);
+    setSuccess("Login successful!");
   };
 
   return (
@@ -135,6 +155,7 @@ const Login = () => {
             {/* Floating cards */}
 
             <div className="absolute left-12 top-16 animate-pulse rounded-2xl border border-white/10 bg-white/[0.06] px-5 py-4 backdrop-blur-xl">
+
               <p className="text-xs uppercase tracking-[0.2em] text-white/35">
                 Premium
               </p>
@@ -142,9 +163,11 @@ const Login = () => {
               <p className="mt-1 text-sm font-bold text-white">
                 Shopping Experience
               </p>
+
             </div>
 
             <div className="absolute bottom-20 right-10 rounded-2xl border border-violet-400/20 bg-violet-500/10 px-5 py-4 backdrop-blur-xl">
+
               <p className="text-xs text-violet-300">
                 AmitShop
               </p>
@@ -152,6 +175,7 @@ const Login = () => {
               <p className="mt-1 text-sm font-bold">
                 Everything you love.
               </p>
+
             </div>
 
             {/* Center content */}
@@ -173,13 +197,19 @@ const Login = () => {
                 </p>
 
                 <h2 className="mt-4 text-4xl font-black tracking-tight xl:text-5xl">
+
                   Enter the
+
                   <br />
+
                   <span className="bg-gradient-to-r from-violet-300 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
                     AmitShop
                   </span>
+
                   <br />
+
                   experience.
+
                 </h2>
 
                 <p className="mx-auto mt-6 max-w-md text-sm leading-7 text-white/35">
@@ -320,7 +350,9 @@ const Login = () => {
                           : "Show password"
                       }
                     >
+
                       {showPassword ? (
+
                         <svg
                           width="21"
                           height="21"
@@ -334,7 +366,9 @@ const Login = () => {
                           <path d="M9.9 5.2A10.8 10.8 0 0112 5c5.5 0 9 7 9 7a17.4 17.4 0 01-3.2 4.1" />
                           <path d="M6.6 6.6C4.2 8.3 3 12 3 12s3.5 7 9 7c1.3 0 2.5-.3 3.5-.8" />
                         </svg>
+
                       ) : (
+
                         <svg
                           width="21"
                           height="21"
@@ -350,7 +384,9 @@ const Login = () => {
                             r="2.5"
                           />
                         </svg>
+
                       )}
+
                     </button>
 
                   </div>
@@ -381,19 +417,27 @@ const Login = () => {
                   <span className="relative z-10 flex items-center justify-center gap-3">
 
                     {isLoading ? (
+
                       <>
+
                         <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
 
                         Signing in...
+
                       </>
+
                     ) : (
+
                       <>
+
                         Sign In
 
                         <span className="transition-transform duration-300 group-hover:translate-x-1">
                           →
                         </span>
+
                       </>
+
                     )}
 
                   </span>
@@ -444,3 +488,4 @@ const Login = () => {
 };
 
 export default Login;
+

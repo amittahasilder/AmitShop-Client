@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Routes,
@@ -11,8 +12,14 @@ import FeaturedProducts from "../components/Home/FeaturedProducts";
 
 import Products from "../pages/Products/Products";
 import ProductDetails from "../pages/Products/ProductDetails";
+import ProductManagement from "../pages/Products/ProductManagement";
+
+// =========================================================
+// SELLER
+// =========================================================
 
 import AddProduct from "../pages/Seller/AddProduct";
+import EditProduct from "../pages/Seller/EditProduct";
 
 // =========================================================
 // CART
@@ -32,6 +39,12 @@ import Wishlist from "../pages/Wishlist/Wishlist";
 
 import Login from "../pages/Auth/Login";
 import Register from "../pages/Auth/Register";
+
+// =========================================================
+// PROFILE
+// =========================================================
+
+import Profile from "../pages/Profile/Profile";
 
 // =========================================================
 // PROTECTED ROUTE
@@ -60,8 +73,6 @@ const Home = () => {
 
       {/* =================================================
           NEXT HOME SECTIONS
-          Categories, Deals, Top Rated etc.
-          পরে আসবে
       ================================================= */}
 
       <section className="min-h-[200px] bg-[#05020b]" />
@@ -199,7 +210,7 @@ const AppRoutes = () => {
         />
 
         {/* =================================================
-            REGISTER / CREATE ACCOUNT
+            REGISTER
         ================================================= */}
 
         <Route
@@ -212,6 +223,15 @@ const AppRoutes = () => {
         ================================================= */}
 
         <Route element={<ProtectedRoute />}>
+
+          {/* =================================================
+              PROFILE
+          ================================================= */}
+
+          <Route
+            path="/profile"
+            element={<Profile />}
+          />
 
           {/* =================================================
               WISHLIST
@@ -237,8 +257,38 @@ const AppRoutes = () => {
           ================================================= */}
 
           <Route
+            path="/products/add"
+            element={<AddProduct />}
+          />
+
+          {/* =================================================
+              SELLER / ADMIN
+              OLD ADD PRODUCT ROUTE
+          ================================================= */}
+
+          <Route
             path="/seller/products/new"
             element={<AddProduct />}
+          />
+
+          {/* =================================================
+              SELLER / ADMIN
+              PRODUCT MANAGEMENT
+          ================================================= */}
+
+          <Route
+            path="/products/manage"
+            element={<ProductManagement />}
+          />
+
+          {/* =================================================
+              SELLER / ADMIN
+              EDIT PRODUCT
+          ================================================= */}
+
+          <Route
+            path="/products/edit/:id"
+            element={<EditProduct />}
           />
 
         </Route>
