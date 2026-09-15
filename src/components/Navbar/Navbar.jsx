@@ -1671,18 +1671,30 @@ const Navbar = () => {
   // GET COUNT FROM API RESPONSE
   // =========================================================
 
-  const getItemCount = (data) => {
+  const getItemCount = (data, type = "cart") => {
     const items =
-      data?.cart?.items ||
-      data?.wishlist?.items ||
-      data?.items ||
-      data?.data?.items ||
-      [];
+      type === "wishlist"
+        ? data?.wishlist?.items ||
+          data?.data?.wishlist?.items ||
+          data?.items ||
+          data?.data?.items ||
+          []
+        : data?.cart?.items ||
+          data?.data?.cart?.items ||
+          data?.items ||
+          data?.data?.items ||
+          [];
 
     if (!Array.isArray(items)) {
       return 0;
     }
 
+    // Wishlist normally has one count per product.
+    if (type === "wishlist") {
+      return items.length;
+    }
+
+    // Cart count is the total quantity of all products.
     return items.reduce(
       (total, item) =>
         total + Number(item?.quantity || 1),
@@ -1712,7 +1724,7 @@ const Navbar = () => {
 
       if (cartResponse.status === "fulfilled") {
         setCartCount(
-          getItemCount(cartResponse.value?.data)
+          getItemCount(cartResponse.value?.data, "cart")
         );
       } else {
         setCartCount(0);
@@ -1722,7 +1734,7 @@ const Navbar = () => {
 
       if (wishlistResponse.status === "fulfilled") {
         setWishlistCount(
-          getItemCount(wishlistResponse.value?.data)
+          getItemCount(wishlistResponse.value?.data, "wishlist")
         );
       } else {
         setWishlistCount(0);

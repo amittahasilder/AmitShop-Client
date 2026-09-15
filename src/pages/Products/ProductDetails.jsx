@@ -12,8 +12,13 @@ const ProductDetails = () => {
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isAddingToWishlist, setIsAddingToWishlist] =
+    useState(false);
+
+  const [isAddingToCart, setIsAddingToCart] =
+    useState(false);
 
   /* =========================================================
      FETCH PRODUCT
@@ -55,6 +60,58 @@ const ProductDetails = () => {
 
     if (id) {
       fetchProduct();
+    }
+  }, [id]);
+
+  /* =========================================================
+     CHECK WISHLIST STATUS
+  ========================================================= */
+
+  useEffect(() => {
+    const checkWishlistStatus = async () => {
+      try {
+        const response = await api.get("/wishlist");
+
+        if (!response.data.success) {
+          return;
+        }
+
+        const wishlistItems =
+          response.data.wishlist?.items ||
+          response.data.data?.items ||
+          response.data.items ||
+          [];
+
+        if (!Array.isArray(wishlistItems)) {
+          return;
+        }
+
+        const alreadyWishlisted =
+          wishlistItems.some((item) => {
+            const wishlistProduct =
+              item?.product || item;
+
+            const productId =
+              wishlistProduct?._id ||
+              wishlistProduct?.id;
+
+            return String(productId) === String(id);
+          });
+
+        setIsWishlisted(alreadyWishlisted);
+      } catch (error) {
+        // User may not be logged in.
+        // Do not break the product page.
+        console.log(
+          "Wishlist Status Check:",
+          error.response?.data?.message ||
+            error.message
+        );
+      }
+    };
+
+    if (id) {
+      checkWishlistStatus();
     }
   }, [id]);
 
@@ -143,6 +200,72 @@ const ProductDetails = () => {
   };
 
   /* =========================================================
+     ADD / REMOVE WISHLIST
+  ========================================================= */
+
+  const handleWishlistToggle = async () => {
+    try {
+      setIsAddingToWishlist(true);
+
+      if (!isWishlisted) {
+        /* ---------------------------------------------------
+           ADD TO WISHLIST
+        --------------------------------------------------- */
+
+        const response = await api.post("/wishlist", {
+          productId: product._id,
+        });
+
+        if (response.data.success) {
+          setIsWishlisted(true);
+
+          // Update Navbar wishlist count immediately
+          window.dispatchEvent(
+            new Event("amitshop:wishlist-updated")
+          );
+        }
+      } else {
+        /* ---------------------------------------------------
+           REMOVE FROM WISHLIST
+        --------------------------------------------------- */
+
+        const response = await api.delete(
+          `/wishlist/${product._id}`
+        );
+
+        if (response.data.success) {
+          setIsWishlisted(false);
+
+          // Update Navbar wishlist count immediately
+          window.dispatchEvent(
+            new Event("amitshop:wishlist-updated")
+          );
+        }
+      }
+    } catch (error) {
+      console.error(
+        "Wishlist Toggle Error:",
+        error
+      );
+
+      if (
+        error.response?.status === 401 ||
+        error.response?.status === 403
+      ) {
+        navigate("/login");
+        return;
+      }
+
+      alert(
+        error.response?.data?.message ||
+          "Unable to update wishlist."
+      );
+    } finally {
+      setIsAddingToWishlist(false);
+    }
+  };
+
+  /* =========================================================
      ADD TO CART
   ========================================================= */
 
@@ -154,6 +277,11 @@ const ProductDetails = () => {
         productId: product._id,
         quantity,
       });
+
+      // Update Navbar cart count
+      window.dispatchEvent(
+        new Event("amitshop:cart-updated")
+      );
 
       navigate("/cart");
     } catch (error) {
@@ -191,6 +319,11 @@ const ProductDetails = () => {
         productId: product._id,
         quantity,
       });
+
+      // Update Navbar cart count
+      window.dispatchEvent(
+        new Event("amitshop:cart-updated")
+      );
 
       navigate("/cart");
     } catch (error) {
@@ -344,17 +477,22 @@ const ProductDetails = () => {
 
               <button
                 type="button"
-                onClick={() =>
-                  setIsWishlisted(
-                    (prev) => !prev
-                  )
-                }
+                onClick={handleWishlistToggle}
+                disabled={isAddingToWishlist}
                 className={`absolute right-7 top-7 z-20 flex h-12 w-12 items-center justify-center rounded-full border backdrop-blur-xl transition-all duration-300 ${
                   isWishlisted
                     ? "border-pink-400/30 bg-pink-500/20 text-pink-400"
                     : "border-white/10 bg-black/30 text-white/60 hover:border-violet-400/30 hover:bg-violet-500/10 hover:text-white"
+                } ${
+                  isAddingToWishlist
+                    ? "cursor-wait opacity-70"
+                    : ""
                 }`}
-                aria-label="Toggle wishlist"
+                aria-label={
+                  isWishlisted
+                    ? "Remove from wishlist"
+                    : "Add to wishlist"
+                }
               >
                 <svg
                   width="21"
@@ -395,9 +533,7 @@ const ProductDetails = () => {
                       key={`${image}-${index}`}
                       type="button"
                       onClick={() =>
-                        setSelectedImage(
-                          index
-                        )
+                        setSelectedImage(index)
                       }
                       className={`relative h-20 overflow-hidden rounded-2xl border transition-all duration-300 sm:h-24 ${
                         selectedImage === index
@@ -560,9 +696,7 @@ const ProductDetails = () => {
                 <div className="flex w-fit items-center overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035]">
                   <button
                     type="button"
-                    onClick={
-                      decreaseQuantity
-                    }
+                    onClick={decreaseQuantity}
                     disabled={quantity <= 1}
                     className="flex h-12 w-12 items-center justify-center text-lg text-white/50 transition-all hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
                   >
@@ -575,9 +709,7 @@ const ProductDetails = () => {
 
                   <button
                     type="button"
-                    onClick={
-                      increaseQuantity
-                    }
+                    onClick={increaseQuantity}
                     disabled={
                       quantity >= stock
                     }
