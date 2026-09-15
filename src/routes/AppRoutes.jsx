@@ -1,4 +1,3 @@
-
 import {
   BrowserRouter,
   Routes,
@@ -34,6 +33,13 @@ import Cart from "../pages/Cart/Cart";
 import Checkout from "../pages/Checkout/Checkout";
 
 // =========================================================
+// ORDERS
+// =========================================================
+
+import MyOrders from "../pages/Orders/MyOrders";
+import OrderDetails from "../pages/Orders/OrderDetails";
+
+// =========================================================
 // WISHLIST
 // =========================================================
 
@@ -65,22 +71,13 @@ import ProtectedRoute from "./ProtectedRoute";
 const Home = () => {
   return (
     <>
-      {/* =================================================
-          PREMIUM 3D HERO
-      ================================================= */}
-
+      {/* PREMIUM 3D HERO */}
       <Hero />
 
-      {/* =================================================
-          FEATURED PRODUCTS
-      ================================================= */}
-
+      {/* FEATURED PRODUCTS */}
       <FeaturedProducts />
 
-      {/* =================================================
-          NEXT HOME SECTIONS
-      ================================================= */}
-
+      {/* NEXT HOME SECTIONS */}
       <section className="min-h-[200px] bg-[#05020b]" />
     </>
   );
@@ -237,6 +234,26 @@ const AppRoutes = () => {
           <Route
             path="/profile"
             element={<Profile />}
+          />
+
+          {/* =================================================
+              MY ORDERS
+              F19
+          ================================================= */}
+
+          <Route
+            path="/orders"
+            element={<MyOrders />}
+          />
+
+          {/* =================================================
+              ORDER DETAILS
+              F20
+          ================================================= */}
+
+          <Route
+            path="/orders/:orderId"
+            element={<OrderDetails />}
           />
 
           {/* =================================================
