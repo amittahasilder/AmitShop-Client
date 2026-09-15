@@ -1,248 +1,3 @@
-// import { useState } from "react";
-// import { useNavigate } from "react-router-dom";
-// import useAuthStore from "../../store/authStore";
-
-// const Profile = () => {
-//   const navigate = useNavigate();
-
-//   const {
-//     user,
-//     logout,
-//     isLoading,
-//   } = useAuthStore();
-
-//   const [loggingOut, setLoggingOut] = useState(false);
-
-//   const handleLogout = async () => {
-//     setLoggingOut(true);
-
-//     await logout();
-
-//     navigate("/login");
-//   };
-
-//   if (!user) {
-//     return (
-//       <main className="min-h-screen bg-[#05020b] px-5 pb-20 pt-36 text-white">
-//         <div className="mx-auto max-w-4xl">
-//           <div className="rounded-3xl border border-violet-400/10 bg-white/[0.025] p-10 text-center backdrop-blur-xl">
-//             <h1 className="text-3xl font-black">
-//               Please Login
-//             </h1>
-
-//             <button
-//               onClick={() => navigate("/login")}
-//               className="mt-6 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-3 font-bold"
-//             >
-//               Go to Login
-//             </button>
-//           </div>
-//         </div>
-//       </main>
-//     );
-//   }
-
-//   const initials =
-//     user.name
-//       ?.split(" ")
-//       .map((word) => word[0])
-//       .join("")
-//       .slice(0, 2)
-//       .toUpperCase() || "U";
-
-//   return (
-//     <main className="min-h-screen bg-[#05020b] px-4 pb-20 pt-32 text-white sm:px-6 md:pt-40">
-//       <div className="mx-auto max-w-5xl">
-
-//         {/* Header */}
-//         <div className="mb-8">
-//           <p className="text-xs font-bold uppercase tracking-[0.3em] text-violet-400/60">
-//             AmitShop Account
-//           </p>
-
-//           <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-5xl">
-//             My Profile
-//           </h1>
-
-//           <p className="mt-3 text-sm text-white/40">
-//             Manage your AmitShop account and personal information.
-//           </p>
-//         </div>
-
-//         {/* Profile Card */}
-//         <div className="overflow-hidden rounded-[30px] border border-violet-400/15 bg-gradient-to-br from-[#16082b]/90 via-[#0b0615]/95 to-[#180820]/90 shadow-[0_30px_100px_rgba(76,29,149,0.25)] backdrop-blur-3xl">
-
-//           {/* Top Gradient */}
-//           <div className="h-32 bg-gradient-to-r from-violet-600/30 via-purple-600/20 to-fuchsia-600/30" />
-
-//           <div className="relative px-6 pb-8 sm:px-10">
-
-//             {/* Avatar */}
-//             <div className="-mt-16 flex flex-col items-start sm:flex-row sm:items-end sm:justify-between">
-
-//               <div className="flex flex-col items-start sm:flex-row sm:items-end">
-
-//                 <div className="flex h-28 w-28 items-center justify-center rounded-[28px] border-4 border-[#0b0615] bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 text-3xl font-black text-white shadow-[0_15px_50px_rgba(139,92,246,0.45)]">
-//                   {initials}
-//                 </div>
-
-//                 <div className="mt-4 sm:ml-5 sm:mt-0">
-//                   <h2 className="text-2xl font-black">
-//                     {user.name}
-//                   </h2>
-
-//                   <p className="mt-1 text-sm text-white/40">
-//                     {user.email}
-//                   </p>
-
-//                   <div className="mt-3 inline-flex rounded-full border border-violet-400/20 bg-violet-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-violet-300">
-//                     {user.role || "customer"}
-//                   </div>
-//                 </div>
-
-//               </div>
-
-//               {/* Logout */}
-//               <button
-//                 type="button"
-//                 onClick={handleLogout}
-//                 disabled={loggingOut || isLoading}
-//                 className="mt-6 rounded-xl border border-red-400/15 bg-red-500/10 px-5 py-3 text-sm font-bold text-red-300 transition-all duration-300 hover:-translate-y-0.5 hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-50 sm:mt-0"
-//               >
-//                 {loggingOut ? "Logging out..." : "Logout"}
-//               </button>
-
-//             </div>
-
-//             {/* Account Information */}
-//             <div className="mt-10">
-
-//               <h3 className="text-lg font-black">
-//                 Account Information
-//               </h3>
-
-//               <div className="mt-5 grid gap-4 sm:grid-cols-2">
-
-//                 {/* Name */}
-//                 <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
-//                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
-//                     Full Name
-//                   </p>
-
-//                   <p className="mt-2 text-base font-bold text-white/85">
-//                     {user.name || "Not available"}
-//                   </p>
-//                 </div>
-
-//                 {/* Email */}
-//                 <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
-//                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
-//                     Email Address
-//                   </p>
-
-//                   <p className="mt-2 break-all text-base font-bold text-white/85">
-//                     {user.email || "Not available"}
-//                   </p>
-//                 </div>
-
-//                 {/* Role */}
-//                 <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
-//                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
-//                     Account Role
-//                   </p>
-
-//                   <p className="mt-2 text-base font-bold capitalize text-white/85">
-//                     {user.role || "Customer"}
-//                   </p>
-//                 </div>
-
-//                 {/* Account Status */}
-//                 <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
-//                   <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
-//                     Account Status
-//                   </p>
-
-//                   <div className="mt-2 flex items-center gap-2">
-//                     <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
-
-//                     <span className="text-base font-bold text-emerald-300">
-//                       Active
-//                     </span>
-//                   </div>
-//                 </div>
-
-//               </div>
-//             </div>
-
-//             {/* Quick Actions */}
-//             <div className="mt-10">
-
-//               <h3 className="text-lg font-black">
-//                 Quick Actions
-//               </h3>
-
-//               <div className="mt-5 grid gap-3 sm:grid-cols-3">
-
-//                 <button
-//                   type="button"
-//                   onClick={() => navigate("/orders")}
-//                   className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-violet-400/20 hover:bg-violet-500/[0.05]"
-//                 >
-//                   <span className="text-2xl">📦</span>
-
-//                   <p className="mt-3 font-bold">
-//                     My Orders
-//                   </p>
-
-//                   <p className="mt-1 text-xs text-white/30">
-//                     View your orders
-//                   </p>
-//                 </button>
-
-//                 <button
-//                   type="button"
-//                   onClick={() => navigate("/wishlist")}
-//                   className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-pink-400/20 hover:bg-pink-500/[0.05]"
-//                 >
-//                   <span className="text-2xl">♡</span>
-
-//                   <p className="mt-3 font-bold">
-//                     Wishlist
-//                   </p>
-
-//                   <p className="mt-1 text-xs text-white/30">
-//                     View saved products
-//                   </p>
-//                 </button>
-
-//                 <button
-//                   type="button"
-//                   onClick={() => navigate("/cart")}
-//                   className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 text-left transition-all duration-300 hover:-translate-y-1 hover:border-violet-400/20 hover:bg-violet-500/[0.05]"
-//                 >
-//                   <span className="text-2xl">🛒</span>
-
-//                   <p className="mt-3 font-bold">
-//                     Shopping Cart
-//                   </p>
-
-//                   <p className="mt-1 text-xs text-white/30">
-//                     Continue shopping
-//                   </p>
-//                 </button>
-
-//               </div>
-//             </div>
-
-//           </div>
-//         </div>
-//       </div>
-//     </main>
-//   );
-// };
-
-// export default Profile;
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../../store/authStore";
@@ -261,6 +16,7 @@ const Profile = () => {
   const [loggingOut, setLoggingOut] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -274,13 +30,26 @@ const Profile = () => {
     country: user?.country || "",
   });
 
+  // ==========================================
+  // LOGOUT
+  // ==========================================
+
   const handleLogout = async () => {
-    setLoggingOut(true);
+    try {
+      setLoggingOut(true);
 
-    await logout();
+      await logout();
 
-    navigate("/login");
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout Error:", error);
+      setLoggingOut(false);
+    }
   };
+
+  // ==========================================
+  // FORM CHANGE
+  // ==========================================
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -293,6 +62,10 @@ const Profile = () => {
     setSuccessMessage("");
     setErrorMessage("");
   };
+
+  // ==========================================
+  // EDIT PROFILE
+  // ==========================================
 
   const handleEdit = () => {
     setForm({
@@ -309,6 +82,10 @@ const Profile = () => {
     setErrorMessage("");
   };
 
+  // ==========================================
+  // CANCEL EDIT
+  // ==========================================
+
   const handleCancel = () => {
     setForm({
       name: user?.name || "",
@@ -323,6 +100,10 @@ const Profile = () => {
     setSuccessMessage("");
     setErrorMessage("");
   };
+
+  // ==========================================
+  // SAVE PROFILE
+  // ==========================================
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -341,7 +122,6 @@ const Profile = () => {
 
         setEditing(false);
 
-        // Refresh user data inside auth store
         await getCurrentUser();
       }
     } catch (error) {
@@ -355,6 +135,73 @@ const Profile = () => {
       setSaving(false);
     }
   };
+
+  // ==========================================
+  // UPLOAD PROFILE AVATAR
+  // ==========================================
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    // ======================================
+    // CLIENT-SIDE VALIDATION
+    // ======================================
+
+    if (!file.type.startsWith("image/")) {
+      setErrorMessage("Please select a valid image file.");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage("Image size must be less than 5MB.");
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setSuccessMessage("");
+    setErrorMessage("");
+
+    try {
+      const formData = new FormData();
+
+      formData.append("avatar", file);
+
+      const response = await api.post(
+        "/users/profile/avatar",
+        formData
+      );
+
+      if (response.data.success) {
+        setSuccessMessage(
+          response.data.message ||
+            "Profile picture uploaded successfully"
+        );
+
+        // Refresh user data so avatar updates everywhere
+        await getCurrentUser();
+      }
+    } catch (error) {
+      console.error("Avatar Upload Error:", error);
+
+      setErrorMessage(
+        error.response?.data?.message ||
+          "Failed to upload profile picture. Please try again."
+      );
+    } finally {
+      setUploadingAvatar(false);
+
+      // Allow selecting the same file again
+      e.target.value = "";
+    }
+  };
+
+  // ==========================================
+  // LOGIN FALLBACK
+  // ==========================================
 
   if (!user) {
     return (
@@ -377,6 +224,10 @@ const Profile = () => {
     );
   }
 
+  // ==========================================
+  // INITIALS
+  // ==========================================
+
   const initials =
     user.name
       ?.split(" ")
@@ -391,7 +242,10 @@ const Profile = () => {
     <main className="min-h-screen bg-[#05020b] px-4 pb-20 pt-32 text-white sm:px-6 md:pt-40">
       <div className="mx-auto max-w-5xl">
 
-        {/* Header */}
+        {/* =====================================
+            HEADER
+        ====================================== */}
+
         <div className="mb-8">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-violet-400/60">
             AmitShop Account
@@ -420,12 +274,19 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Messages */}
+        {/* =====================================
+            SUCCESS MESSAGE
+        ====================================== */}
+
         {successMessage && (
           <div className="mb-5 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-5 py-4 text-sm font-semibold text-emerald-300">
             ✓ {successMessage}
           </div>
         )}
+
+        {/* =====================================
+            ERROR MESSAGE
+        ====================================== */}
 
         {errorMessage && (
           <div className="mb-5 rounded-2xl border border-red-400/20 bg-red-500/10 px-5 py-4 text-sm font-semibold text-red-300">
@@ -433,7 +294,10 @@ const Profile = () => {
           </div>
         )}
 
-        {/* Main Profile Card */}
+        {/* =====================================
+            MAIN PROFILE CARD
+        ====================================== */}
+
         <div className="overflow-hidden rounded-[30px] border border-violet-400/15 bg-gradient-to-br from-[#16082b]/90 via-[#0b0615]/95 to-[#180820]/90 shadow-[0_30px_100px_rgba(76,29,149,0.25)] backdrop-blur-3xl">
 
           {/* Gradient Header */}
@@ -441,15 +305,67 @@ const Profile = () => {
 
           <div className="relative px-6 pb-8 sm:px-10">
 
-            {/* Profile Header */}
+            {/* ===================================
+                PROFILE HEADER
+            ==================================== */}
+
             <div className="-mt-16 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
 
               <div className="flex flex-col items-start sm:flex-row sm:items-end">
 
-                {/* Avatar */}
-                <div className="flex h-28 w-28 items-center justify-center rounded-[28px] border-4 border-[#0b0615] bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 text-3xl font-black text-white shadow-[0_15px_50px_rgba(139,92,246,0.45)]">
-                  {initials}
+                {/* =================================
+                    AVATAR
+                ================================== */}
+
+                <div className="relative">
+
+                  <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[28px] border-4 border-[#0b0615] bg-gradient-to-br from-violet-500 via-purple-600 to-fuchsia-600 text-3xl font-black text-white shadow-[0_15px_50px_rgba(139,92,246,0.45)]">
+
+                    {user.avatar ? (
+                      <img
+                        src={user.avatar}
+                        alt={`${user.name || "User"} profile`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      initials
+                    )}
+
+                    {/* Upload Loading Overlay */}
+                    {uploadingAvatar && (
+                      <div className="absolute inset-0 flex items-center justify-center rounded-[24px] bg-black/70 backdrop-blur-sm">
+                        <div className="h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Camera Button */}
+
+                  <label
+                    htmlFor="avatar-upload"
+                    className={`absolute -bottom-2 -right-2 flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border-4 border-[#0b0615] bg-gradient-to-r from-violet-600 to-fuchsia-600 text-lg shadow-[0_8px_25px_rgba(139,92,246,0.45)] transition-all duration-300 hover:scale-110 ${
+                      uploadingAvatar
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }`}
+                    title="Change profile picture"
+                  >
+                    📷
+                  </label>
+
+                  <input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/jpg"
+                    onChange={handleAvatarUpload}
+                    disabled={uploadingAvatar}
+                    className="hidden"
+                  />
                 </div>
+
+                {/* =================================
+                    USER INFO
+                ================================== */}
 
                 <div className="mt-4 sm:ml-5 sm:mt-0">
 
@@ -465,10 +381,17 @@ const Profile = () => {
                     {user.role || "customer"}
                   </div>
 
+                  <p className="mt-3 text-xs text-white/25">
+                    Click 📷 to change profile picture
+                  </p>
+
                 </div>
               </div>
 
-              {/* Logout */}
+              {/* =================================
+                  LOGOUT
+              ================================== */}
+
               <button
                 type="button"
                 onClick={handleLogout}
@@ -480,7 +403,10 @@ const Profile = () => {
 
             </div>
 
-            {/* Edit Form */}
+            {/* =====================================
+                EDIT FORM
+            ====================================== */}
+
             {editing ? (
               <form
                 onSubmit={handleSave}
@@ -639,7 +565,10 @@ const Profile = () => {
               </form>
             ) : (
               <>
-                {/* Account Information */}
+                {/* =================================
+                    ACCOUNT INFORMATION
+                ================================== */}
+
                 <div className="mt-10">
 
                   <h3 className="text-lg font-black">
@@ -716,6 +645,17 @@ const Profile = () => {
                       </p>
                     </div>
 
+                    {/* Postal Code */}
+                    <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
+                        Postal Code
+                      </p>
+
+                      <p className="mt-2 text-base font-bold text-white/85">
+                        {user.postalCode || "Not added"}
+                      </p>
+                    </div>
+
                     {/* Status */}
                     <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
                       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
@@ -734,6 +674,7 @@ const Profile = () => {
                     {/* Seller Badge */}
                     {isSeller && (
                       <div className="rounded-2xl border border-fuchsia-400/15 bg-fuchsia-500/[0.05] p-5">
+
                         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-fuchsia-300/50">
                           Seller Account
                         </p>
@@ -743,15 +684,19 @@ const Profile = () => {
                         </p>
 
                         <p className="mt-1 text-xs text-white/30">
-                          Seller profile features will be available here.
+                          Your seller profile and shop tools are available.
                         </p>
+
                       </div>
                     )}
 
                   </div>
                 </div>
 
-                {/* Quick Actions */}
+                {/* =================================
+                    QUICK ACTIONS
+                ================================== */}
+
                 <div className="mt-10">
 
                   <h3 className="text-lg font-black">
@@ -760,6 +705,7 @@ const Profile = () => {
 
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
 
+                    {/* Orders */}
                     <button
                       type="button"
                       onClick={() => navigate("/orders")}
@@ -778,6 +724,7 @@ const Profile = () => {
                       </p>
                     </button>
 
+                    {/* Wishlist */}
                     <button
                       type="button"
                       onClick={() => navigate("/wishlist")}
@@ -796,6 +743,7 @@ const Profile = () => {
                       </p>
                     </button>
 
+                    {/* Cart */}
                     <button
                       type="button"
                       onClick={() => navigate("/cart")}
@@ -817,7 +765,10 @@ const Profile = () => {
                   </div>
                 </div>
 
-                {/* Seller Section */}
+                {/* =================================
+                    SELLER CENTER
+                ================================== */}
+
                 {isSeller && (
                   <div className="mt-10 rounded-3xl border border-fuchsia-400/15 bg-gradient-to-br from-fuchsia-500/[0.07] to-violet-500/[0.04] p-6">
 
@@ -844,6 +795,7 @@ const Profile = () => {
 
                   </div>
                 )}
+
               </>
             )}
 
