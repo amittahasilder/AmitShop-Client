@@ -9,6 +9,10 @@ import Footer from "../components/Footer/Footer";
 import Hero from "../components/Hero/Hero";
 import FeaturedProducts from "../components/Home/FeaturedProducts";
 
+// =========================================================
+// PRODUCTS
+// =========================================================
+
 import Products from "../pages/Products/Products";
 import ProductDetails from "../pages/Products/ProductDetails";
 import ProductManagement from "../pages/Products/ProductManagement";
@@ -19,6 +23,7 @@ import ProductManagement from "../pages/Products/ProductManagement";
 
 import AddProduct from "../pages/Seller/AddProduct";
 import EditProduct from "../pages/Seller/EditProduct";
+import SellerDashboard from "../pages/Seller/SellerDashboard";
 
 // =========================================================
 // CART
@@ -281,6 +286,16 @@ const AppRoutes = () => {
           <Route
             path="/checkout"
             element={<Checkout />}
+          />
+
+          {/* =================================================
+              SELLER DASHBOARD
+              F23.2
+          ================================================= */}
+
+          <Route
+            path="/seller/dashboard"
+            element={<SellerDashboard />}
           />
 
           {/* =================================================
