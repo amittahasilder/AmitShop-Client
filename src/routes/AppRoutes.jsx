@@ -24,6 +24,7 @@ import ProductManagement from "../pages/Products/ProductManagement";
 import AddProduct from "../pages/Seller/AddProduct";
 import EditProduct from "../pages/Seller/EditProduct";
 import SellerDashboard from "../pages/Seller/SellerDashboard";
+import SellerOrders from "../pages/Seller/SellerOrders";
 
 // =========================================================
 // CART
@@ -296,6 +297,16 @@ const AppRoutes = () => {
           <Route
             path="/seller/dashboard"
             element={<SellerDashboard />}
+          />
+
+          {/* =================================================
+              SELLER ORDERS
+              F23.3
+          ================================================= */}
+
+          <Route
+            path="/seller/orders"
+            element={<SellerOrders />}
           />
 
           {/* =================================================
