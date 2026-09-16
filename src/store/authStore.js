@@ -165,12 +165,20 @@ const useAuthStore = create((set) => ({
   },
 
   // =========================
+  // UPDATE USER
+  // =========================
+  updateUser: (updatedUser) => {
+    set({
+      user: updatedUser,
+    });
+  },
+
+  // =========================
   // GET CURRENT USER
   // =========================
   getCurrentUser: async () => {
     const storedToken = localStorage.getItem("accessToken");
 
-    // No token
     if (!storedToken) {
       set({
         user: null,
@@ -189,18 +197,13 @@ const useAuthStore = create((set) => ({
     });
 
     try {
-      const response = await api.get("/auth/me", {
-        headers: {
-          Authorization: `Bearer ${storedToken}`,
-        },
-
-        // Prevent infinite loading
-        timeout: 10000,
-      });
+      const response = await api.get("/auth/me");
 
       if (response.data?.success && response.data?.user) {
+        const currentUser = response.data.user;
+
         set({
-          user: response.data.user,
+          user: currentUser,
           accessToken: storedToken,
           isAuthenticated: true,
           isLoading: false,
@@ -208,11 +211,10 @@ const useAuthStore = create((set) => ({
 
         return {
           success: true,
-          user: response.data.user,
+          user: currentUser,
         };
       }
 
-      // Invalid response
       localStorage.removeItem("accessToken");
 
       set({
@@ -241,7 +243,6 @@ const useAuthStore = create((set) => ({
         success: false,
       };
     } finally {
-      // VERY IMPORTANT
       set({
         isLoading: false,
       });

@@ -11,6 +11,7 @@ const Profile = () => {
     logout,
     isLoading,
     getCurrentUser,
+    updateUser,
   } = useAuthStore();
 
   const [loggingOut, setLoggingOut] = useState(false);
@@ -115,14 +116,46 @@ const Profile = () => {
     try {
       const response = await api.put("/users/profile", form);
 
-      if (response.data.success) {
+      if (response.data?.success) {
+        /*
+         * Backend should return:
+         *
+         * {
+         *   success: true,
+         *   message: "...",
+         *   user: {...}
+         * }
+         */
+
+        const updatedUser =
+          response.data?.user ||
+          response.data?.data?.user;
+
+        // ======================================
+        // UPDATE ZUSTAND IMMEDIATELY
+        // ======================================
+
+        if (updatedUser) {
+          updateUser(updatedUser);
+        }
+
         setSuccessMessage(
-          response.data.message || "Profile updated successfully"
+          response.data?.message ||
+            "Profile updated successfully"
         );
 
         setEditing(false);
 
+        // ======================================
+        // SYNC WITH BACKEND
+        // ======================================
+
         await getCurrentUser();
+      } else {
+        setErrorMessage(
+          response.data?.message ||
+            "Failed to update profile."
+        );
       }
     } catch (error) {
       console.error("Profile Update Error:", error);
@@ -175,14 +208,34 @@ const Profile = () => {
         formData
       );
 
-      if (response.data.success) {
+      if (response.data?.success) {
+        // ======================================
+        // UPDATE USER IMMEDIATELY IF RETURNED
+        // ======================================
+
+        const updatedUser =
+          response.data?.user ||
+          response.data?.data?.user;
+
+        if (updatedUser) {
+          updateUser(updatedUser);
+        }
+
         setSuccessMessage(
-          response.data.message ||
+          response.data?.message ||
             "Profile picture uploaded successfully"
         );
 
-        // Refresh user data so avatar updates everywhere
+        // ======================================
+        // SYNC WITH BACKEND
+        // ======================================
+
         await getCurrentUser();
+      } else {
+        setErrorMessage(
+          response.data?.message ||
+            "Failed to upload profile picture."
+        );
       }
     } catch (error) {
       console.error("Avatar Upload Error:", error);
@@ -194,7 +247,7 @@ const Profile = () => {
     } finally {
       setUploadingAvatar(false);
 
-      // Allow selecting the same file again
+      // Allow selecting same file again
       e.target.value = "";
     }
   };
@@ -301,6 +354,7 @@ const Profile = () => {
         <div className="overflow-hidden rounded-[30px] border border-violet-400/15 bg-gradient-to-br from-[#16082b]/90 via-[#0b0615]/95 to-[#180820]/90 shadow-[0_30px_100px_rgba(76,29,149,0.25)] backdrop-blur-3xl">
 
           {/* Gradient Header */}
+
           <div className="h-32 bg-gradient-to-r from-violet-600/30 via-purple-600/20 to-fuchsia-600/30" />
 
           <div className="relative px-6 pb-8 sm:px-10">
@@ -331,7 +385,6 @@ const Profile = () => {
                       initials
                     )}
 
-                    {/* Upload Loading Overlay */}
                     {uploadingAvatar && (
                       <div className="absolute inset-0 flex items-center justify-center rounded-[24px] bg-black/70 backdrop-blur-sm">
                         <div className="h-7 w-7 animate-spin rounded-full border-2 border-white/20 border-t-white" />
@@ -412,6 +465,7 @@ const Profile = () => {
                 onSubmit={handleSave}
                 className="mt-10"
               >
+
                 <div className="mb-5">
                   <h3 className="text-lg font-black">
                     Edit Profile
@@ -425,6 +479,7 @@ const Profile = () => {
                 <div className="grid gap-5 sm:grid-cols-2">
 
                   {/* Name */}
+
                   <div>
                     <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
                       Full Name
@@ -442,6 +497,7 @@ const Profile = () => {
                   </div>
 
                   {/* Email */}
+
                   <div>
                     <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
                       Email Address
@@ -460,6 +516,7 @@ const Profile = () => {
                   </div>
 
                   {/* Phone */}
+
                   <div>
                     <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
                       Phone
@@ -476,6 +533,7 @@ const Profile = () => {
                   </div>
 
                   {/* Country */}
+
                   <div>
                     <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
                       Country
@@ -492,6 +550,7 @@ const Profile = () => {
                   </div>
 
                   {/* City */}
+
                   <div>
                     <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
                       City
@@ -508,6 +567,7 @@ const Profile = () => {
                   </div>
 
                   {/* Postal Code */}
+
                   <div>
                     <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
                       Postal Code
@@ -524,6 +584,7 @@ const Profile = () => {
                   </div>
 
                   {/* Address */}
+
                   <div className="sm:col-span-2">
                     <label className="mb-2 block text-xs font-bold uppercase tracking-wider text-white/40">
                       Address
@@ -542,6 +603,7 @@ const Profile = () => {
                 </div>
 
                 {/* Form Actions */}
+
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
 
                   <button
@@ -562,9 +624,11 @@ const Profile = () => {
                   </button>
 
                 </div>
+
               </form>
             ) : (
               <>
+
                 {/* =================================
                     ACCOUNT INFORMATION
                 ================================== */}
@@ -578,6 +642,7 @@ const Profile = () => {
                   <div className="mt-5 grid gap-4 sm:grid-cols-2">
 
                     {/* Name */}
+
                     <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
                       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
                         Full Name
@@ -589,6 +654,7 @@ const Profile = () => {
                     </div>
 
                     {/* Email */}
+
                     <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
                       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
                         Email Address
@@ -600,6 +666,7 @@ const Profile = () => {
                     </div>
 
                     {/* Phone */}
+
                     <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
                       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
                         Phone
@@ -611,6 +678,7 @@ const Profile = () => {
                     </div>
 
                     {/* Role */}
+
                     <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
                       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
                         Account Role
@@ -622,6 +690,7 @@ const Profile = () => {
                     </div>
 
                     {/* Address */}
+
                     <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
                       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
                         Address
@@ -633,6 +702,7 @@ const Profile = () => {
                     </div>
 
                     {/* Location */}
+
                     <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
                       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
                         Location
@@ -646,6 +716,7 @@ const Profile = () => {
                     </div>
 
                     {/* Postal Code */}
+
                     <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
                       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
                         Postal Code
@@ -657,6 +728,7 @@ const Profile = () => {
                     </div>
 
                     {/* Status */}
+
                     <div className="rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition-all duration-300 hover:border-violet-400/15 hover:bg-violet-500/[0.04]">
                       <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30">
                         Account Status
@@ -672,6 +744,7 @@ const Profile = () => {
                     </div>
 
                     {/* Seller Badge */}
+
                     {isSeller && (
                       <div className="rounded-2xl border border-fuchsia-400/15 bg-fuchsia-500/[0.05] p-5">
 
@@ -706,6 +779,7 @@ const Profile = () => {
                   <div className="mt-5 grid gap-3 sm:grid-cols-3">
 
                     {/* Orders */}
+
                     <button
                       type="button"
                       onClick={() => navigate("/orders")}
@@ -725,6 +799,7 @@ const Profile = () => {
                     </button>
 
                     {/* Wishlist */}
+
                     <button
                       type="button"
                       onClick={() => navigate("/wishlist")}
@@ -744,6 +819,7 @@ const Profile = () => {
                     </button>
 
                     {/* Cart */}
+
                     <button
                       type="button"
                       onClick={() => navigate("/cart")}
