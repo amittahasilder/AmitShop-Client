@@ -4,7 +4,11 @@ import api from "../../api/axios";
 import useAuthStore from "../../store/authStore";
 
 const SellerDashboard = () => {
-  const { user, isAuthenticated } = useAuthStore();
+  const {
+    user,
+    accessToken,
+    isAuthenticated,
+  } = useAuthStore();
 
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -19,17 +23,28 @@ const SellerDashboard = () => {
       setLoading(true);
       setError("");
 
-      const response = await api.get("/seller/dashboard");
+      const response = await api.get(
+        "/seller/dashboard",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
 
       if (response.data?.success) {
         setDashboard(response.data.dashboard);
       } else {
         setError(
-          response.data?.message || "Failed to load dashboard"
+          response.data?.message ||
+            "Failed to load dashboard"
         );
       }
     } catch (err) {
-      console.error("Seller Dashboard Error:", err);
+      console.error(
+        "Seller Dashboard Error:",
+        err
+      );
 
       setError(
         err.response?.data?.message ||
@@ -40,11 +55,15 @@ const SellerDashboard = () => {
     }
   };
 
+  // ==========================================
+  // LOAD DASHBOARD
+  // ==========================================
+
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && accessToken) {
       fetchDashboard();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, accessToken]);
 
   // ==========================================
   // LOADING
@@ -54,14 +73,19 @@ const SellerDashboard = () => {
     return (
       <div className="min-h-screen bg-[#05020d] flex items-center justify-center relative overflow-hidden">
         <div className="absolute w-[500px] h-[500px] bg-purple-700/20 rounded-full blur-[140px] animate-pulse" />
+
         <div className="absolute w-[400px] h-[400px] bg-fuchsia-600/10 rounded-full blur-[120px] -bottom-40 -right-40" />
 
         <div className="relative text-center">
           <div className="relative w-20 h-20 mx-auto">
             <div className="absolute inset-0 rounded-full border-2 border-purple-500/20" />
+
             <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-purple-500 border-r-fuchsia-500 animate-spin" />
+
             <div className="absolute inset-3 rounded-full bg-purple-500/10 backdrop-blur-xl flex items-center justify-center">
-              <span className="text-2xl">✦</span>
+              <span className="text-2xl">
+                ✦
+              </span>
             </div>
           </div>
 
@@ -116,24 +140,46 @@ const SellerDashboard = () => {
   // DATA
   // ==========================================
 
-  const products = dashboard?.totalProducts || 0;
-  const activeProducts = dashboard?.activeProducts || 0;
-  const inactiveProducts = dashboard?.inactiveProducts ?? Math.max(
-    products - activeProducts,
-    0
-  );
+  const products =
+    dashboard?.totalProducts || 0;
 
-  const lowStock = dashboard?.lowStockProducts || 0;
-  const outOfStock = dashboard?.outOfStockProducts || 0;
+  const activeProducts =
+    dashboard?.activeProducts || 0;
 
-  const orders = dashboard?.totalOrders || 0;
-  const pending = dashboard?.pendingOrders || 0;
-  const processing = dashboard?.processingOrders || 0;
-  const shipped = dashboard?.shippedOrders || 0;
-  const delivered = dashboard?.deliveredOrders || 0;
-  const cancelled = dashboard?.cancelledOrders || 0;
+  const inactiveProducts =
+    dashboard?.inactiveProducts ??
+    Math.max(
+      products - activeProducts,
+      0
+    );
 
-  const revenue = dashboard?.totalRevenue || 0;
+  const lowStock =
+    dashboard?.lowStockProducts || 0;
+
+  const outOfStock =
+    dashboard?.outOfStockProducts || 0;
+
+  const orders =
+    dashboard?.totalOrders || 0;
+
+  const pending =
+    dashboard?.pendingOrders || 0;
+
+  const processing =
+    dashboard?.processingOrders || 0;
+
+  const shipped =
+    dashboard?.shippedOrders || 0;
+
+  const delivered =
+    dashboard?.deliveredOrders || 0;
+
+  const cancelled =
+    dashboard?.cancelledOrders || 0;
+
+  const revenue =
+    dashboard?.totalRevenue || 0;
+
   const averageOrderValue =
     dashboard?.averageOrderValue || 0;
 
@@ -203,7 +249,10 @@ const SellerDashboard = () => {
   }) => {
     const percentage =
       total > 0
-        ? Math.min((count / total) * 100, 100)
+        ? Math.min(
+            (count / total) * 100,
+            100
+          )
         : 0;
 
     return (
@@ -284,18 +333,21 @@ const SellerDashboard = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#05020d] text-white">
+
       {/* ======================================
           BACKGROUND
       ====================================== */}
 
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
+
         {/* Grid */}
         <div
           className="absolute inset-0 opacity-[0.035]"
           style={{
             backgroundImage:
               "linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)",
-            backgroundSize: "60px 60px",
+            backgroundSize:
+              "60px 60px",
           }}
         />
 
@@ -333,6 +385,7 @@ const SellerDashboard = () => {
 
               <h1 className="mt-5 text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight">
                 Welcome back,
+
                 <span className="block bg-gradient-to-r from-purple-400 via-fuchsia-400 to-purple-300 bg-clip-text text-transparent">
                   {user?.name || "Seller"}
                 </span>
@@ -346,6 +399,7 @@ const SellerDashboard = () => {
             </div>
 
             <div className="flex flex-wrap gap-3">
+
               <Link
                 to="/products/add"
                 className="group relative overflow-hidden px-6 py-3.5 rounded-2xl bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 font-bold transition-all duration-300 hover:-translate-y-1 shadow-xl shadow-purple-900/30"
@@ -363,6 +417,7 @@ const SellerDashboard = () => {
               >
                 Manage Products
               </Link>
+
             </div>
           </div>
         </div>
@@ -372,6 +427,7 @@ const SellerDashboard = () => {
         ==================================== */}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+
           <StatCard
             icon="📦"
             title="Total Products"
@@ -405,6 +461,7 @@ const SellerDashboard = () => {
             subtitle={`${outOfStock} out of stock`}
             badge="Inventory"
           />
+
         </div>
 
         {/* ====================================
@@ -418,13 +475,18 @@ const SellerDashboard = () => {
           ================================== */}
 
           <section className="group relative overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.04] backdrop-blur-2xl p-6 shadow-2xl shadow-black/20">
+
             <div className="absolute -top-24 -right-24 w-56 h-56 rounded-full bg-purple-600/10 blur-3xl group-hover:bg-purple-600/20 transition duration-700" />
 
             <div className="relative">
+
               <div className="flex items-center justify-between mb-8">
+
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">📊</span>
+                    <span className="text-xl">
+                      📊
+                    </span>
 
                     <h2 className="text-xl font-black">
                       Order Overview
@@ -439,9 +501,11 @@ const SellerDashboard = () => {
                 <span className="px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-xs font-bold text-purple-300">
                   {orders} Orders
                 </span>
+
               </div>
 
               <div className="space-y-6">
+
                 <StatusBar
                   icon="⏳"
                   label="Pending"
@@ -476,6 +540,7 @@ const SellerDashboard = () => {
                   count={cancelled}
                   total={orders}
                 />
+
               </div>
             </div>
           </section>
@@ -485,12 +550,17 @@ const SellerDashboard = () => {
           ================================== */}
 
           <section className="group relative overflow-hidden rounded-[30px] border border-white/10 bg-white/[0.04] backdrop-blur-2xl p-6 shadow-2xl shadow-black/20">
+
             <div className="absolute -bottom-24 -left-24 w-56 h-56 rounded-full bg-fuchsia-600/10 blur-3xl group-hover:bg-fuchsia-600/20 transition duration-700" />
 
             <div className="relative">
+
               <div className="mb-8">
+
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">🏪</span>
+                  <span className="text-xl">
+                    🏪
+                  </span>
 
                   <h2 className="text-xl font-black">
                     Store Overview
@@ -500,9 +570,11 @@ const SellerDashboard = () => {
                 <p className="mt-2 text-sm text-slate-500">
                   Product inventory health
                 </p>
+
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+
                 <MiniCard
                   title="Active"
                   value={activeProducts}
@@ -528,6 +600,7 @@ const SellerDashboard = () => {
                   icon="🔴"
                   type="danger"
                 />
+
               </div>
 
               <Link
@@ -535,12 +608,15 @@ const SellerDashboard = () => {
                 className="group/link mt-6 flex items-center justify-center gap-2 w-full px-5 py-3.5 rounded-2xl border border-white/10 bg-white/[0.03] hover:bg-purple-500/10 hover:border-purple-500/30 font-semibold text-slate-300 hover:text-white transition-all duration-300"
               >
                 View All Products
+
                 <span className="group-hover/link:translate-x-1 transition-transform">
                   →
                 </span>
               </Link>
+
             </div>
           </section>
+
         </div>
 
         {/* ====================================
@@ -552,21 +628,30 @@ const SellerDashboard = () => {
           <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[400px] h-[200px] bg-purple-600/10 blur-[100px]" />
 
           <div className="relative">
+
             <div className="mb-7">
+
               <div className="flex items-center gap-2">
-                <span className="text-xl">⚡</span>
+
+                <span className="text-xl">
+                  ⚡
+                </span>
 
                 <h2 className="text-xl font-black">
                   Quick Actions
                 </h2>
+
               </div>
 
               <p className="mt-2 text-sm text-slate-500">
                 Everything you need to manage your store
               </p>
+
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+              {/* Add Product */}
 
               <Link
                 to="/products/add"
@@ -589,6 +674,8 @@ const SellerDashboard = () => {
                 </div>
               </Link>
 
+              {/* Manage Products */}
+
               <Link
                 to="/products/manage"
                 className="group relative overflow-hidden rounded-2xl border border-white/10 bg-black/10 p-6 hover:border-purple-500/30 hover:bg-purple-500/[0.06] transition-all duration-400 hover:-translate-y-1"
@@ -610,8 +697,10 @@ const SellerDashboard = () => {
                 </div>
               </Link>
 
+              {/* Seller Orders */}
+
               <Link
-                to="/orders"
+                to="/seller/orders"
                 className="group relative overflow-hidden rounded-2xl border border-white/10 bg-black/10 p-6 hover:border-purple-500/30 hover:bg-purple-500/[0.06] transition-all duration-400 hover:-translate-y-1"
               >
                 <div className="text-3xl transition-transform duration-300 group-hover:scale-110">
@@ -619,17 +708,19 @@ const SellerDashboard = () => {
                 </div>
 
                 <h3 className="mt-5 font-black">
-                  My Orders
+                  Seller Orders
                 </h3>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  View customer orders
+                  Manage customer orders
                 </p>
 
                 <div className="mt-5 text-purple-400 text-sm font-bold">
-                  View →
+                  Manage →
                 </div>
               </Link>
+
+              {/* Profile */}
 
               <Link
                 to="/profile"
@@ -662,12 +753,16 @@ const SellerDashboard = () => {
 
         <section className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
 
+          {/* Active Products */}
+
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-5">
+
             <p className="text-xs uppercase tracking-widest text-slate-600">
               Active Products
             </p>
 
             <div className="flex items-end justify-between mt-3">
+
               <p className="text-3xl font-black text-white">
                 {activeProducts}
               </p>
@@ -675,15 +770,20 @@ const SellerDashboard = () => {
               <span className="text-xs text-purple-400">
                 / {products}
               </span>
+
             </div>
           </div>
 
+          {/* Delivered Orders */}
+
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-5">
+
             <p className="text-xs uppercase tracking-widest text-slate-600">
               Delivered Orders
             </p>
 
             <div className="flex items-end justify-between mt-3">
+
               <p className="text-3xl font-black text-white">
                 {delivered}
               </p>
@@ -691,22 +791,30 @@ const SellerDashboard = () => {
               <span className="text-xs text-emerald-400">
                 Completed
               </span>
+
             </div>
           </div>
 
+          {/* Average Order */}
+
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl p-5">
+
             <p className="text-xs uppercase tracking-widest text-slate-600">
               Average Order
             </p>
 
             <div className="flex items-end justify-between mt-3">
+
               <p className="text-3xl font-black text-white">
-                ${Number(averageOrderValue).toFixed(2)}
+                ${Number(
+                  averageOrderValue
+                ).toFixed(2)}
               </p>
 
               <span className="text-xs text-purple-400">
                 Average
               </span>
+
             </div>
           </div>
 
@@ -717,13 +825,21 @@ const SellerDashboard = () => {
         ==================================== */}
 
         <div className="mt-10 pb-4 text-center">
+
           <div className="inline-flex items-center gap-2 text-xs text-slate-600">
+
             <span className="w-1.5 h-1.5 rounded-full bg-purple-500 animate-pulse" />
+
             AmitShop Seller Center
+
             <span>•</span>
+
             Dashboard
+
           </div>
+
         </div>
+
       </main>
     </div>
   );

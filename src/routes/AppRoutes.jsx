@@ -28,6 +28,12 @@ import SellerOrders from "../pages/Seller/SellerOrders";
 import SellerOrderDetails from "../pages/Seller/SellerOrderDetails";
 
 // =========================================================
+// ADMIN
+// =========================================================
+
+import AdminDashboard from "../pages/Admin/AdminDashboard";
+
+// =========================================================
 // CART
 // =========================================================
 
@@ -358,6 +364,16 @@ const AppRoutes = () => {
           <Route
             path="/products/edit/:id"
             element={<EditProduct />}
+          />
+
+          {/* =================================================
+              ADMIN DASHBOARD
+              F24
+          ================================================= */}
+
+          <Route
+            path="/admin/dashboard"
+            element={<AdminDashboard />}
           />
 
         </Route>
