@@ -910,520 +910,63 @@ import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import useAuthStore from "../../store/authStore";
 
-
 // ============================================================
-// HELPERS
-// ============================================================
-
-const formatCurrency = (value) => {
-  return `$${Number(value || 0).toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-};
-
-const formatNumber = (value) => {
-  return Number(value || 0).toLocaleString("en-US");
-};
-
-const formatDate = (date) => {
-  if (!date) return "N/A";
-
-  const parsed = new Date(date);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return "N/A";
-  }
-
-  return parsed.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
-
-const getStatusStyle = (status) => {
-  const normalized = String(status || "pending").toLowerCase();
-
-  const styles = {
-    pending:
-      "bg-yellow-500/10 text-yellow-300 border-yellow-500/20",
-    confirmed:
-      "bg-blue-500/10 text-blue-300 border-blue-500/20",
-    processing:
-      "bg-indigo-500/10 text-indigo-300 border-indigo-500/20",
-    shipped:
-      "bg-purple-500/10 text-purple-300 border-purple-500/20",
-    delivered:
-      "bg-green-500/10 text-green-300 border-green-500/20",
-    cancelled:
-      "bg-red-500/10 text-red-300 border-red-500/20",
-  };
-
-  return (
-    styles[normalized] ||
-    "bg-white/5 text-white/50 border-white/10"
-  );
-};
-
-
-// ============================================================
-// ICON COMPONENT
-// ============================================================
-
-const Icon = ({ type, size = 22 }) => {
-  const common = {
-    width: size,
-    height: size,
-    viewBox: "0 0 24 24",
-    fill: "none",
-    stroke: "currentColor",
-    strokeWidth: "1.8",
-    strokeLinecap: "round",
-    strokeLinejoin: "round",
-  };
-
-  if (type === "users") {
-    return (
-      <svg {...common}>
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-        <circle cx="9" cy="7" r="4" />
-        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-      </svg>
-    );
-  }
-
-  if (type === "box") {
-    return (
-      <svg {...common}>
-        <path d="m21 8-9-5-9 5 9 5 9-5Z" />
-        <path d="M3 8v8l9 5 9-5V8" />
-        <path d="M12 13v8" />
-      </svg>
-    );
-  }
-
-  if (type === "cart") {
-    return (
-      <svg {...common}>
-        <circle cx="9" cy="20" r="1" />
-        <circle cx="19" cy="20" r="1" />
-        <path d="M3 4h2l2.4 11.2a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L21 8H6" />
-      </svg>
-    );
-  }
-
-  if (type === "money") {
-    return (
-      <svg {...common}>
-        <rect x="3" y="5" width="18" height="14" rx="2" />
-        <circle cx="12" cy="12" r="3" />
-        <path d="M7 9h.01M17 15h.01" />
-      </svg>
-    );
-  }
-
-  if (type === "chart") {
-    return (
-      <svg {...common}>
-        <path d="M4 19V5" />
-        <path d="M4 19h17" />
-        <path d="m7 15 4-5 3 3 5-7" />
-      </svg>
-    );
-  }
-
-  if (type === "activity") {
-    return (
-      <svg {...common}>
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      </svg>
-    );
-  }
-
-  if (type === "arrow") {
-    return (
-      <svg {...common}>
-        <path d="M5 12h14" />
-        <path d="m13 6 6 6-6 6" />
-      </svg>
-    );
-  }
-
-  if (type === "package") {
-    return (
-      <svg {...common}>
-        <path d="M16.5 9.4 7.55 4.24" />
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z" />
-        <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-        <line x1="12" y1="22.08" x2="12" y2="12" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg {...common}>
-      <circle cx="12" cy="12" r="9" />
-    </svg>
-  );
-};
-
-
-// ============================================================
-// GLASS CARD
-// ============================================================
-
-const GlassCard = ({
-  children,
-  className = "",
-  hover = true,
-}) => {
-  return (
-    <div
-      className={`
-        relative overflow-hidden
-        rounded-[28px]
-        border border-white/[0.09]
-        bg-white/[0.035]
-        backdrop-blur-2xl
-        shadow-[0_20px_80px_rgba(0,0,0,0.25)]
-        ${hover ? "admin-glass-card" : ""}
-        ${className}
-      `}
-    >
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.06] via-transparent to-purple-500/[0.03]" />
-      <div className="relative z-10">
-        {children}
-      </div>
-    </div>
-  );
-};
-
-
-// ============================================================
-// ANIMATED STAT CARD
-// ============================================================
-
-const StatCard = ({
-  title,
-  value,
-  subtitle,
-  icon,
-  accent = "purple",
-}) => {
-  const accents = {
-    purple: {
-      glow: "bg-purple-500/20",
-      icon: "bg-purple-500/10 text-purple-300 border-purple-500/20",
-      line: "from-purple-500 to-fuchsia-500",
-    },
-
-    blue: {
-      glow: "bg-blue-500/20",
-      icon: "bg-blue-500/10 text-blue-300 border-blue-500/20",
-      line: "from-blue-500 to-cyan-400",
-    },
-
-    green: {
-      glow: "bg-green-500/20",
-      icon: "bg-green-500/10 text-green-300 border-green-500/20",
-      line: "from-green-500 to-emerald-400",
-    },
-
-    orange: {
-      glow: "bg-orange-500/20",
-      icon: "bg-orange-500/10 text-orange-300 border-orange-500/20",
-      line: "from-orange-500 to-yellow-400",
-    },
-  };
-
-  const style = accents[accent] || accents.purple;
-
-  return (
-    <GlassCard className="group p-6">
-      {/* Glow */}
-      <div
-        className={`
-          pointer-events-none
-          absolute -right-16 -top-16
-          h-40 w-40 rounded-full
-          ${style.glow}
-          blur-3xl
-          transition-all duration-700
-          group-hover:scale-150
-        `}
-      />
-
-      {/* Shine */}
-      <div className="pointer-events-none absolute -left-[120%] top-0 h-full w-[70%] rotate-12 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent transition-all duration-1000 group-hover:left-[130%]" />
-
-      <div className="flex items-start justify-between gap-5">
-        <div className="min-w-0">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/35">
-            {title}
-          </p>
-
-          <h3 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">
-            {value}
-          </h3>
-
-          <p className="mt-3 text-xs text-white/30">
-            {subtitle}
-          </p>
-        </div>
-
-        <div
-          className={`
-            flex h-14 w-14 shrink-0
-            items-center justify-center
-            rounded-2xl border
-            ${style.icon}
-            transition-all duration-500
-            group-hover:rotate-6
-            group-hover:scale-110
-          `}
-        >
-          <Icon type={icon} size={25} />
-        </div>
-      </div>
-
-      <div className="mt-6 h-1 overflow-hidden rounded-full bg-white/[0.05]">
-        <div
-          className={`
-            h-full w-[42%]
-            rounded-full
-            bg-gradient-to-r ${style.line}
-            transition-all duration-1000
-            group-hover:w-full
-          `}
-        />
-      </div>
-    </GlassCard>
-  );
-};
-
-
-// ============================================================
-// DONUT CHART
-// ============================================================
-
-const DonutChart = ({ data, total }) => {
-  const radius = 78;
-  const circumference = 2 * Math.PI * radius;
-
-  let accumulated = 0;
-
-  const segments = data.map((item) => {
-    const percentage =
-      total > 0 ? item.value / total : 0;
-
-    const length = percentage * circumference;
-
-    const segment = {
-      ...item,
-      length,
-      offset: -accumulated,
-    };
-
-    accumulated += length;
-
-    return segment;
-  });
-
-  return (
-    <div className="relative mx-auto h-[260px] w-[260px]">
-      <svg
-        viewBox="0 0 200 200"
-        className="h-full w-full -rotate-90"
-      >
-        <circle
-          cx="100"
-          cy="100"
-          r={radius}
-          fill="none"
-          stroke="rgba(255,255,255,0.04)"
-          strokeWidth="18"
-        />
-
-        {segments.map((item, index) => (
-          <circle
-            key={item.label}
-            cx="100"
-            cy="100"
-            r={radius}
-            fill="none"
-            stroke={item.svgColor}
-            strokeWidth="18"
-            strokeLinecap="round"
-            strokeDasharray={`${item.length} ${circumference}`}
-            strokeDashoffset={item.offset}
-            className="admin-chart-segment"
-            style={{
-              animationDelay: `${index * 120}ms`,
-            }}
-          />
-        ))}
-      </svg>
-
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-5xl font-black tracking-tight">
-          {formatNumber(total)}
-        </span>
-
-        <span className="mt-1 text-xs uppercase tracking-[0.18em] text-white/30">
-          Total Orders
-        </span>
-      </div>
-    </div>
-  );
-};
-
-
-// ============================================================
-// BAR
-// ============================================================
-
-const ProgressBar = ({
-  label,
-  value,
-  total,
-  color,
-  icon,
-}) => {
-  const percentage =
-    total > 0
-      ? Math.min(100, Math.round((value / total) * 100))
-      : 0;
-
-  return (
-    <div className="group">
-      <div className="mb-2 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/[0.04] text-sm">
-            {icon}
-          </div>
-
-          <span className="text-sm font-medium text-white/55 transition group-hover:text-white">
-            {label}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-white/25">
-            {percentage}%
-          </span>
-
-          <span className="text-sm font-black">
-            {formatNumber(value)}
-          </span>
-        </div>
-      </div>
-
-      <div className="h-3 overflow-hidden rounded-full bg-white/[0.04]">
-        <div
-          className={`h-full rounded-full ${color} admin-progress-bar`}
-          style={{
-            width: `${percentage}%`,
-          }}
-        />
-      </div>
-    </div>
-  );
-};
-
-
-// ============================================================
-// MAIN
+// ADMIN DASHBOARD
+// Premium Glass / Mirror / Animated Dashboard
 // ============================================================
 
 const AdminDashboard = () => {
-  const {
-    user,
-    accessToken,
-    isAuthenticated,
-  } = useAuthStore();
+  const { user, accessToken, isAuthenticated } = useAuthStore();
 
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [lastUpdated, setLastUpdated] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   // ==========================================================
-  // FETCH
+  // FETCH DASHBOARD
   // ==========================================================
+
+  const fetchDashboard = async (isRefresh = false) => {
+    if (!isAuthenticated || !accessToken) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      if (isRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      setError("");
+
+      const response = await api.get("/admin/dashboard", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const data = response?.data?.dashboard;
+
+      setDashboard(data || {});
+    } catch (err) {
+      console.error("Admin Dashboard Error:", err);
+
+      setError(
+        err?.response?.data?.message ||
+          "Failed to load admin dashboard"
+      );
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    let mounted = true;
-
-    const fetchDashboard = async () => {
-      if (!isAuthenticated || !accessToken) {
-        if (mounted) {
-          setLoading(false);
-        }
-
-        return;
-      }
-
-      try {
-        if (mounted) {
-          setLoading(true);
-          setError("");
-        }
-
-        const response = await api.get(
-          "/admin/dashboard",
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
-        );
-
-        if (!mounted) return;
-
-        const payload = response?.data?.dashboard;
-
-        setDashboard(payload || {});
-        setLastUpdated(new Date());
-      } catch (err) {
-        console.error(
-          "Admin Dashboard Error:",
-          err
-        );
-
-        if (!mounted) return;
-
-        const status = err?.response?.status;
-
-        if (status === 401) {
-          setError(
-            "Your login session has expired. Please login again."
-          );
-        } else if (status === 403) {
-          setError(
-            "Access denied. Your account does not have administrator permission."
-          );
-        } else {
-          setError(
-            err?.response?.data?.message ||
-              "Failed to load admin dashboard."
-          );
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false);
-        }
-      }
-    };
-
     fetchDashboard();
-
-    return () => {
-      mounted = false;
-    };
-  }, [accessToken, isAuthenticated]);
-
+  }, [isAuthenticated, accessToken]);
 
   // ==========================================================
   // LOADING
@@ -1431,110 +974,113 @@ const AdminDashboard = () => {
 
   if (loading) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#04020a] text-white">
-        <div className="absolute -left-40 top-10 h-96 w-96 rounded-full bg-purple-700/20 blur-[120px] animate-pulse" />
+      <>
+        <DashboardStyles />
 
-        <div className="absolute -right-40 bottom-10 h-96 w-96 rounded-full bg-fuchsia-700/20 blur-[120px] animate-pulse" />
+        <div className="admin-shell min-h-screen flex items-center justify-center px-6">
+          <div className="ambient ambient-one" />
+          <div className="ambient ambient-two" />
 
-        <div className="relative text-center">
-          <div className="relative mx-auto h-24 w-24">
-            <div className="absolute inset-0 rounded-full border border-purple-500/20" />
+          <div className="glass-loader text-center">
+            <div className="loader-ring">
+              <div className="loader-core">A</div>
+            </div>
 
-            <div className="absolute inset-1 rounded-full border-4 border-transparent border-t-purple-500 border-r-fuchsia-500 animate-spin" />
+            <h2 className="mt-7 text-2xl font-black text-white">
+              Loading Admin Panel
+            </h2>
 
-            <div className="absolute inset-5 rounded-full bg-purple-500/20 blur-xl animate-pulse" />
+            <p className="mt-2 text-white/40 text-sm">
+              Preparing your dashboard...
+            </p>
 
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl">A</span>
+            <div className="loader-line mt-6">
+              <div />
             </div>
           </div>
-
-          <p className="mt-7 text-sm font-semibold tracking-[0.2em] text-white/40">
-            LOADING ADMIN PANEL
-          </p>
         </div>
-      </div>
+      </>
     );
   }
-
 
   // ==========================================================
   // AUTH
   // ==========================================================
 
-  if (!isAuthenticated || !accessToken) {
+  if (!isAuthenticated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#04020a] px-6 text-white">
-        <GlassCard className="max-w-md p-10 text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-purple-500/20 bg-purple-500/10 text-4xl">
-            🔐
+      <>
+        <DashboardStyles />
+
+        <div className="admin-shell min-h-screen flex items-center justify-center px-6">
+          <div className="ambient ambient-one" />
+          <div className="ambient ambient-two" />
+
+          <div className="glass-panel max-w-md w-full text-center p-10">
+            <div className="icon-box mx-auto mb-6">🔐</div>
+
+            <h1 className="text-3xl font-black text-white">
+              Authentication Required
+            </h1>
+
+            <p className="text-white/40 mt-3 mb-7">
+              Please login to access the admin dashboard.
+            </p>
+
+            <Link
+              to="/login"
+              className="premium-button inline-flex"
+            >
+              Login →
+            </Link>
           </div>
-
-          <h1 className="mt-7 text-3xl font-black">
-            Authentication Required
-          </h1>
-
-          <p className="mt-3 text-sm leading-6 text-white/35">
-            Please login to continue to the administrator dashboard.
-          </p>
-
-          <Link
-            to="/login"
-            className="mt-7 inline-flex rounded-2xl bg-gradient-to-r from-purple-600 to-fuchsia-600 px-7 py-3 font-bold transition hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-900/40"
-          >
-            Login
-          </Link>
-        </GlassCard>
-      </div>
+        </div>
+      </>
     );
   }
 
-
   // ==========================================================
-  // ADMIN CHECK
+  // ADMIN SECURITY
   // ==========================================================
 
-  const currentRole = String(
-    user?.role || ""
-  ).toLowerCase();
-
-  if (currentRole !== "admin") {
+  if (user?.role !== "admin") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#04020a] px-6 text-white">
-        <GlassCard className="max-w-md p-10 text-center">
-          <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-[30px] border border-red-500/20 bg-red-500/10 text-5xl">
-            🔒
-          </div>
+      <>
+        <DashboardStyles />
 
-          <h1 className="mt-7 text-4xl font-black">
-            Access Denied
-          </h1>
+        <div className="admin-shell min-h-screen flex items-center justify-center px-6">
+          <div className="ambient ambient-one" />
+          <div className="ambient ambient-two" />
 
-          <p className="mt-4 text-sm leading-6 text-white/35">
-            Only administrators can access this dashboard.
-          </p>
+          <div className="glass-panel max-w-lg w-full text-center p-10">
+            <div className="lock-orb mx-auto mb-7">
+              🔒
+            </div>
 
-          <div className="mt-5 rounded-2xl border border-white/5 bg-white/[0.025] p-4 text-left">
-            <p className="text-xs text-white/25">
-              Current account role
+            <div className="status-badge mb-5">
+              <span className="status-dot red" />
+              ADMIN ACCESS
+            </div>
+
+            <h1 className="text-4xl font-black text-white">
+              Access Denied
+            </h1>
+
+            <p className="text-white/40 mt-4 mb-7 leading-7">
+              Only administrators can access this dashboard.
             </p>
 
-            <p className="mt-1 font-bold text-red-300">
-              {user?.role || "unknown"}
-            </p>
+            <Link
+              to="/"
+              className="glass-button inline-flex"
+            >
+              ← Back to Home
+            </Link>
           </div>
-
-          <Link
-            to="/"
-            className="mt-7 inline-flex rounded-2xl border border-white/10 bg-white/[0.04] px-7 py-3 font-bold transition hover:bg-white/[0.08]"
-          >
-            Back to Home
-          </Link>
-        </GlassCard>
-      </div>
+        </div>
+      </>
     );
   }
-
 
   // ==========================================================
   // ERROR
@@ -1542,33 +1088,37 @@ const AdminDashboard = () => {
 
   if (error) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#04020a] px-6 text-white">
-        <div className="absolute left-0 top-0 h-96 w-96 rounded-full bg-red-500/10 blur-[130px]" />
+      <>
+        <DashboardStyles />
 
-        <GlassCard className="max-w-lg p-10 text-center">
-          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-red-500/20 bg-red-500/10 text-4xl">
-            ⚠️
+        <div className="admin-shell min-h-screen flex items-center justify-center px-6">
+          <div className="ambient ambient-one" />
+          <div className="ambient ambient-two" />
+
+          <div className="glass-panel max-w-lg w-full text-center p-10">
+            <div className="error-orb mx-auto mb-7">
+              ⚠️
+            </div>
+
+            <h1 className="text-3xl font-black text-white">
+              Dashboard Error
+            </h1>
+
+            <p className="text-red-400 mt-4 mb-7">
+              {error}
+            </p>
+
+            <button
+              onClick={() => fetchDashboard(true)}
+              className="premium-button"
+            >
+              Try Again ↻
+            </button>
           </div>
-
-          <h1 className="mt-7 text-3xl font-black">
-            Dashboard Error
-          </h1>
-
-          <p className="mt-4 text-sm leading-6 text-red-300">
-            {error}
-          </p>
-
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-7 rounded-2xl bg-gradient-to-r from-purple-600 to-fuchsia-600 px-7 py-3 font-bold transition hover:-translate-y-1 hover:shadow-2xl hover:shadow-purple-900/40"
-          >
-            Try Again
-          </button>
-        </GlassCard>
-      </div>
+        </div>
+      </>
     );
   }
-
 
   // ==========================================================
   // DATA
@@ -1579,1050 +1129,2602 @@ const AdminDashboard = () => {
   const orders = dashboard?.orders || {};
   const sales = dashboard?.sales || {};
 
-  const recentOrders =
-    Array.isArray(dashboard?.recentOrders)
-      ? dashboard.recentOrders
-      : [];
+  const recentOrders = dashboard?.recentOrders || [];
+  const recentUsers = dashboard?.recentUsers || [];
 
-  const recentUsers =
-    Array.isArray(dashboard?.recentUsers)
-      ? dashboard.recentUsers
-      : [];
+  const totalOrders = Number(orders.total) || 0;
 
-
-  // ==========================================================
-  // ORDER DATA
-  // ==========================================================
-
-  const orderChartData = [
+  const orderStatuses = [
     {
       label: "Pending",
       value: Number(orders.pending) || 0,
       icon: "⏳",
-      color: "bg-yellow-500",
-      svgColor: "#eab308",
-      text: "text-yellow-300",
+      color: "#f59e0b",
     },
     {
       label: "Confirmed",
       value: Number(orders.confirmed) || 0,
       icon: "✓",
-      color: "bg-blue-500",
-      svgColor: "#3b82f6",
-      text: "text-blue-300",
+      color: "#3b82f6",
     },
     {
       label: "Processing",
       value: Number(orders.processing) || 0,
       icon: "⚙",
-      color: "bg-indigo-500",
-      svgColor: "#6366f1",
-      text: "text-indigo-300",
+      color: "#6366f1",
     },
     {
       label: "Shipped",
       value: Number(orders.shipped) || 0,
       icon: "🚚",
-      color: "bg-purple-500",
-      svgColor: "#a855f7",
-      text: "text-purple-300",
+      color: "#a855f7",
     },
     {
       label: "Delivered",
       value: Number(orders.delivered) || 0,
       icon: "✓",
-      color: "bg-green-500",
-      svgColor: "#22c55e",
-      text: "text-green-300",
+      color: "#22c55e",
     },
     {
       label: "Cancelled",
       value: Number(orders.cancelled) || 0,
       icon: "×",
-      color: "bg-red-500",
-      svgColor: "#ef4444",
-      text: "text-red-300",
+      color: "#ef4444",
     },
   ];
 
-  const totalOrders =
-    Number(orders.total) ||
-    orderChartData.reduce(
-      (sum, item) => sum + item.value,
-      0
+  // ==========================================================
+  // FORMATTERS
+  // ==========================================================
+
+  const formatCurrency = (value) => {
+    return `$${Number(value || 0).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
+  const formatDate = (date) => {
+    if (!date) return "N/A";
+
+    const parsed = new Date(date);
+
+    if (Number.isNaN(parsed.getTime())) {
+      return "N/A";
+    }
+
+    return parsed.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const getStatusClass = (status) => {
+    const normalized = String(status || "pending").toLowerCase();
+
+    const classes = {
+      pending:
+        "status-yellow",
+      confirmed:
+        "status-blue",
+      processing:
+        "status-indigo",
+      shipped:
+        "status-purple",
+      delivered:
+        "status-green",
+      cancelled:
+        "status-red",
+    };
+
+    return classes[normalized] || "status-default";
+  };
+
+  // ==========================================================
+  // DONUT GRADIENT
+  // ==========================================================
+
+  const getDonutGradient = () => {
+    const values = orderStatuses.map((item) => item.value);
+
+    const total =
+      values.reduce((sum, value) => sum + value, 0) || 1;
+
+    let current = 0;
+
+    return orderStatuses
+      .map((item) => {
+        const start = (current / total) * 360;
+
+        current += item.value;
+
+        const end = (current / total) * 360;
+
+        return `${item.color} ${start}deg ${end}deg`;
+      })
+      .join(", ");
+  };
+
+  // ==========================================================
+  // COMPONENTS
+  // ==========================================================
+
+  const StatCard = ({
+    title,
+    value,
+    subtitle,
+    icon,
+    accent = "purple",
+    trend,
+  }) => {
+    return (
+      <div className={`stat-card accent-${accent}`}>
+        <div className="card-shine" />
+
+        <div className="card-glow" />
+
+        <div className="relative z-10">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="stat-label">
+                {title}
+              </p>
+
+              <h3 className="stat-value">
+                {value}
+              </h3>
+
+              <p className="stat-subtitle">
+                {subtitle}
+              </p>
+            </div>
+
+            <div className="stat-icon">
+              {icon}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-5">
+            <div className="stat-progress">
+              <div />
+            </div>
+
+            {trend && (
+              <span className="trend">
+                {trend}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
     );
+  };
 
+  const MiniMetric = ({
+    label,
+    value,
+    icon,
+  }) => {
+    return (
+      <div className="mini-metric">
+        <div className="mini-icon">
+          {icon}
+        </div>
 
-  // ==========================================================
-  // PLATFORM HEALTH
-  // ==========================================================
-
-  const userTotal =
-    Number(users.total) || 0;
-
-  const productTotal =
-    Number(products.total) || 0;
-
+        <div>
+          <p>{label}</p>
+          <strong>{value}</strong>
+        </div>
+      </div>
+    );
+  };
 
   // ==========================================================
   // PAGE
   // ==========================================================
 
   return (
-    <div className="admin-dashboard min-h-screen overflow-hidden bg-[#04020a] text-white">
+    <>
+      <DashboardStyles />
 
-      {/* ======================================================
-          ANIMATED BACKGROUND
-      ====================================================== */}
-
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-
-        <div className="absolute -left-72 -top-72 h-[650px] w-[650px] rounded-full bg-purple-700/[0.10] blur-[150px] admin-orb" />
-
-        <div className="absolute -right-72 top-[18%] h-[650px] w-[650px] rounded-full bg-fuchsia-700/[0.08] blur-[150px] admin-orb admin-orb-delay" />
-
-        <div className="absolute bottom-[-300px] left-[30%] h-[600px] w-[600px] rounded-full bg-indigo-700/[0.08] blur-[150px] admin-orb" />
-
-        <div className="absolute inset-0 opacity-[0.025] [background-image:linear-gradient(rgba(255,255,255,.7)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.7)_1px,transparent_1px)] [background-size:60px_60px]" />
-      </div>
-
-
-      {/* ======================================================
-          MAIN
-      ====================================================== */}
-
-      <main className="relative mx-auto max-w-[1550px] px-4 py-7 sm:px-6 lg:px-8 lg:py-10">
-
+      <div className="admin-shell min-h-screen text-white overflow-hidden">
         {/* ====================================================
-            HEADER
+            BACKGROUND
         ==================================================== */}
 
-        <section className="mb-9">
+        <div className="background-layer">
+          <div className="grid-overlay" />
 
-          <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
+          <div className="ambient ambient-one" />
+          <div className="ambient ambient-two" />
+          <div className="ambient ambient-three" />
 
-            <div>
+          <div className="floating-orb orb-one" />
+          <div className="floating-orb orb-two" />
+          <div className="floating-orb orb-three" />
+        </div>
 
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-purple-500/20 bg-purple-500/[0.07] px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-purple-300">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-purple-400 opacity-60" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-purple-400" />
-                </span>
+        {/* ====================================================
+            MAIN
+        ==================================================== */}
 
-                Live Admin Control Center
+        <main className="relative z-10 max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+
+          {/* ==================================================
+              TOP BAR
+          ================================================== */}
+
+          <div className="top-glass mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+
+              <div className="flex items-center gap-4">
+                <div className="brand-orb">
+                  A
+                </div>
+
+                <div>
+                  <p className="text-white font-black text-lg">
+                    AmitShop
+                  </p>
+
+                  <p className="text-white/30 text-xs">
+                    Enterprise Control Center
+                  </p>
+                </div>
               </div>
 
-              <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="status-badge">
+                  <span className="status-dot green" />
+                  SYSTEM ONLINE
+                </div>
+
+                <button
+                  onClick={() => fetchDashboard(true)}
+                  disabled={refreshing}
+                  className="glass-button"
+                >
+                  <span
+                    className={
+                      refreshing
+                        ? "animate-spin inline-block"
+                        : ""
+                    }
+                  >
+                    ↻
+                  </span>
+
+                  {refreshing
+                    ? "Refreshing..."
+                    : "Refresh"}
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+          {/* ==================================================
+              HERO
+          ================================================== */}
+
+          <section className="hero-section mb-10">
+
+            <div>
+              <div className="status-badge mb-5">
+                <span className="status-dot purple" />
+                LIVE ADMIN PANEL
+              </div>
+
+              <h1 className="hero-title">
                 Admin{" "}
-                <span className="bg-gradient-to-r from-purple-300 via-fuchsia-400 to-purple-500 bg-clip-text text-transparent">
+                <span>
                   Dashboard
                 </span>
               </h1>
 
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-white/35 sm:text-base">
+              <p className="hero-description">
                 Welcome back,{" "}
-                <span className="font-bold text-white">
-                  {user?.name || "Administrator"}
-                </span>
-                . Manage your store, monitor orders,
-                customers, products and revenue from one place.
+                <strong>
+                  {user?.name || "Admin"}
+                </strong>
+                . Monitor your AmitShop ecosystem,
+                revenue, orders, users and inventory
+                from one intelligent control center.
               </p>
-
-              {lastUpdated && (
-                <p className="mt-3 text-xs text-white/20">
-                  Last synchronized{" "}
-                  {lastUpdated.toLocaleTimeString()}
-                </p>
-              )}
-
             </div>
 
-
-            {/* HEADER ACTIONS */}
-
-            <div className="flex flex-wrap gap-3">
-
+            <div className="hero-actions">
               <Link
                 to="/admin/users"
-                className="group inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-3 text-sm font-bold text-white/70 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/20 hover:bg-white/[0.07] hover:text-white"
+                className="glass-button"
               >
-                <Icon type="users" size={18} />
-                Users
+                👥 Users
               </Link>
 
               <Link
                 to="/admin/products"
-                className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 to-fuchsia-600 px-5 py-3 text-sm font-black shadow-xl shadow-purple-950/30 transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02] hover:from-purple-500 hover:to-fuchsia-500"
+                className="premium-button"
               >
-                <Icon type="box" size={18} />
-                Products
+                📦 Products
+              </Link>
+            </div>
+
+          </section>
+
+          {/* ==================================================
+              KPI CARDS
+          ================================================== */}
+
+          <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+
+            <StatCard
+              title="Total Users"
+              value={users.total || 0}
+              subtitle={`${users.active || 0} active accounts`}
+              icon="👥"
+              accent="purple"
+              trend="+ LIVE"
+            />
+
+            <StatCard
+              title="Total Products"
+              value={products.total || 0}
+              subtitle={`${products.active || 0} active products`}
+              icon="📦"
+              accent="blue"
+              trend="+ STOCK"
+            />
+
+            <StatCard
+              title="Total Orders"
+              value={orders.total || 0}
+              subtitle={`${orders.pending || 0} currently pending`}
+              icon="🛒"
+              accent="orange"
+              trend="LIVE"
+            />
+
+            <StatCard
+              title="Total Revenue"
+              value={formatCurrency(sales.totalSales)}
+              subtitle={`${formatCurrency(
+                sales.averageOrderValue
+              )} average order`}
+              icon="💰"
+              accent="green"
+              trend="SALES"
+            />
+
+          </section>
+
+          {/* ==================================================
+              SECONDARY CARDS
+          ================================================== */}
+
+          <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-10">
+
+            <StatCard
+              title="Customers"
+              value={users.customers || 0}
+              subtitle="Registered customers"
+              icon="🧑"
+              accent="purple"
+            />
+
+            <StatCard
+              title="Sellers"
+              value={users.sellers || 0}
+              subtitle="Marketplace sellers"
+              icon="🏪"
+              accent="blue"
+            />
+
+            <StatCard
+              title="Low Stock"
+              value={products.lowStock || 0}
+              subtitle={`${products.outOfStock || 0} out of stock`}
+              icon="⚠️"
+              accent="orange"
+            />
+
+            <StatCard
+              title="Delivered"
+              value={orders.delivered || 0}
+              subtitle={`${orders.cancelled || 0} cancelled`}
+              icon="🚀"
+              accent="green"
+            />
+
+          </section>
+
+          {/* ==================================================
+              ANALYTICS
+          ================================================== */}
+
+          <section className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-10">
+
+            {/* ==================================================
+                DONUT CHART
+            ================================================== */}
+
+            <div className="glass-panel xl:col-span-1 p-7">
+
+              <div className="section-header">
+                <div>
+                  <p className="section-kicker">
+                    ANALYTICS
+                  </p>
+
+                  <h2 className="section-title">
+                    Order Status
+                  </h2>
+
+                  <p className="section-subtitle">
+                    Real-time order distribution
+                  </p>
+                </div>
+
+                <div className="header-icon">
+                  📊
+                </div>
+              </div>
+
+              <div className="donut-wrapper">
+
+                <div
+                  className="donut"
+                  style={{
+                    background: `conic-gradient(${getDonutGradient()})`,
+                  }}
+                >
+                  <div className="donut-inner">
+                    <span className="donut-number">
+                      {totalOrders}
+                    </span>
+
+                    <span className="donut-label">
+                      TOTAL ORDERS
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 mt-7">
+
+                {orderStatuses.map((item) => (
+                  <div
+                    key={item.label}
+                    className="chart-legend"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="legend-dot"
+                        style={{
+                          background: item.color,
+                        }}
+                      />
+
+                      <span>
+                        {item.label}
+                      </span>
+                    </div>
+
+                    <strong>
+                      {item.value}
+                    </strong>
+                  </div>
+                ))}
+
+              </div>
+            </div>
+
+            {/* ==================================================
+                BAR CHART
+            ================================================== */}
+
+            <div className="glass-panel xl:col-span-2 p-7">
+
+              <div className="section-header">
+
+                <div>
+                  <p className="section-kicker">
+                    PERFORMANCE
+                  </p>
+
+                  <h2 className="section-title">
+                    Order Overview
+                  </h2>
+
+                  <p className="section-subtitle">
+                    Current order activity by status
+                  </p>
+                </div>
+
+                <div className="live-pill">
+                  <span className="status-dot green" />
+                  Live Data
+                </div>
+
+              </div>
+
+              <div className="bar-chart">
+
+                {orderStatuses.map((item, index) => {
+
+                  const percentage =
+                    totalOrders > 0
+                      ? Math.round(
+                          (item.value /
+                            totalOrders) *
+                            100
+                        )
+                      : 0;
+
+                  return (
+                    <div
+                      className="bar-row"
+                      key={item.label}
+                    >
+
+                      <div className="bar-info">
+                        <div className="bar-name">
+                          <span className="bar-icon">
+                            {item.icon}
+                          </span>
+
+                          <span>
+                            {item.label}
+                          </span>
+                        </div>
+
+                        <div className="bar-number">
+                          <span>
+                            {percentage}%
+                          </span>
+
+                          <strong>
+                            {item.value}
+                          </strong>
+                        </div>
+                      </div>
+
+                      <div className="bar-track">
+                        <div
+                          className="bar-fill"
+                          style={{
+                            width: `${percentage}%`,
+                            background: item.color,
+                            animationDelay: `${index * 100}ms`,
+                          }}
+                        />
+                      </div>
+
+                    </div>
+                  );
+                })}
+
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
+
+                <MiniMetric
+                  label="Customers"
+                  value={users.customers || 0}
+                  icon="👥"
+                />
+
+                <MiniMetric
+                  label="Sellers"
+                  value={users.sellers || 0}
+                  icon="🏪"
+                />
+
+                <MiniMetric
+                  label="Products"
+                  value={products.total || 0}
+                  icon="📦"
+                />
+
+              </div>
+
+            </div>
+          </section>
+
+          {/* ==================================================
+              PLATFORM HEALTH
+          ================================================== */}
+
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
+
+            {/* USERS */}
+
+            <div className="glass-panel p-7">
+
+              <div className="section-header">
+
+                <div>
+                  <p className="section-kicker">
+                    COMMUNITY
+                  </p>
+
+                  <h2 className="section-title">
+                    User Overview
+                  </h2>
+
+                  <p className="section-subtitle">
+                    Platform account distribution
+                  </p>
+                </div>
+
+                <div className="header-icon">
+                  👥
+                </div>
+
+              </div>
+
+              <div className="space-y-6 mt-7">
+
+                {[
+                  {
+                    label: "Customers",
+                    value: Number(users.customers) || 0,
+                    color: "#a855f7",
+                  },
+                  {
+                    label: "Sellers",
+                    value: Number(users.sellers) || 0,
+                    color: "#d946ef",
+                  },
+                  {
+                    label: "Admins",
+                    value: Number(users.admins) || 0,
+                    color: "#3b82f6",
+                  },
+                ].map((item) => {
+
+                  const total =
+                    Number(users.total) || 1;
+
+                  const percentage = Math.min(
+                    100,
+                    Math.round(
+                      (item.value / total) *
+                        100
+                    )
+                  );
+
+                  return (
+                    <div key={item.label}>
+
+                      <div className="flex items-center justify-between mb-2">
+
+                        <span className="text-sm text-white/50">
+                          {item.label}
+                        </span>
+
+                        <span className="font-bold">
+                          {item.value}
+                        </span>
+
+                      </div>
+
+                      <div className="health-track">
+                        <div
+                          className="health-fill"
+                          style={{
+                            width: `${percentage}%`,
+                            background: item.color,
+                          }}
+                        />
+                      </div>
+
+                      <p className="text-[11px] text-white/25 mt-2">
+                        {percentage}% of total users
+                      </p>
+
+                    </div>
+                  );
+                })}
+
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mt-8">
+
+                <div className="health-card green-health">
+                  <span>ACTIVE</span>
+                  <strong>
+                    {users.active || 0}
+                  </strong>
+                </div>
+
+                <div className="health-card red-health">
+                  <span>INACTIVE</span>
+                  <strong>
+                    {users.inactive || 0}
+                  </strong>
+                </div>
+
+              </div>
+            </div>
+
+            {/* PRODUCTS */}
+
+            <div className="glass-panel p-7">
+
+              <div className="section-header">
+
+                <div>
+                  <p className="section-kicker">
+                    INVENTORY
+                  </p>
+
+                  <h2 className="section-title">
+                    Product Health
+                  </h2>
+
+                  <p className="section-subtitle">
+                    Inventory status overview
+                  </p>
+                </div>
+
+                <div className="header-icon">
+                  📦
+                </div>
+
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-7">
+
+                <div className="inventory-card inventory-green">
+                  <div>
+                    <span>ACTIVE</span>
+                    <strong>
+                      {products.active || 0}
+                    </strong>
+                  </div>
+
+                  <div className="inventory-icon">
+                    ✓
+                  </div>
+                </div>
+
+                <div className="inventory-card">
+                  <div>
+                    <span>INACTIVE</span>
+                    <strong>
+                      {products.inactive || 0}
+                    </strong>
+                  </div>
+
+                  <div className="inventory-icon">
+                    ○
+                  </div>
+                </div>
+
+                <div className="inventory-card inventory-yellow">
+                  <div>
+                    <span>LOW STOCK</span>
+                    <strong>
+                      {products.lowStock || 0}
+                    </strong>
+                  </div>
+
+                  <div className="inventory-icon">
+                    ⚠
+                  </div>
+                </div>
+
+                <div className="inventory-card inventory-red">
+                  <div>
+                    <span>OUT OF STOCK</span>
+                    <strong>
+                      {products.outOfStock || 0}
+                    </strong>
+                  </div>
+
+                  <div className="inventory-icon">
+                    ×
+                  </div>
+                </div>
+
+              </div>
+
+            </div>
+          </section>
+
+          {/* ==================================================
+              RECENT ORDERS
+          ================================================== */}
+
+          <section className="glass-panel overflow-hidden mb-10">
+
+            <div className="section-header p-7 border-b border-white/10">
+
+              <div>
+                <p className="section-kicker">
+                  ACTIVITY
+                </p>
+
+                <h2 className="section-title">
+                  Recent Orders
+                </h2>
+
+                <p className="section-subtitle">
+                  Latest customer activity
+                </p>
+              </div>
+
+              <Link
+                to="/admin/orders"
+                className="glass-button"
+              >
+                View All →
               </Link>
 
             </div>
 
-          </div>
-
-        </section>
-
-
-        {/* ====================================================
-            KPI
-        ==================================================== */}
-
-        <section className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-
-          <StatCard
-            title="Total Users"
-            value={formatNumber(users.total)}
-            subtitle={`${formatNumber(users.active)} active accounts`}
-            icon="users"
-            accent="purple"
-          />
-
-          <StatCard
-            title="Total Products"
-            value={formatNumber(products.total)}
-            subtitle={`${formatNumber(products.active)} active products`}
-            icon="box"
-            accent="blue"
-          />
-
-          <StatCard
-            title="Total Orders"
-            value={formatNumber(orders.total)}
-            subtitle={`${formatNumber(orders.pending)} currently pending`}
-            icon="cart"
-            accent="orange"
-          />
-
-          <StatCard
-            title="Total Revenue"
-            value={formatCurrency(sales.totalSales)}
-            subtitle={`${formatCurrency(sales.averageOrderValue)} average order`}
-            icon="money"
-            accent="green"
-          />
-
-        </section>
-
-
-        {/* ====================================================
-            SECONDARY KPI
-        ==================================================== */}
-
-        <section className="mb-10 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-
-          <StatCard
-            title="Customers"
-            value={formatNumber(users.customers)}
-            subtitle="Registered customers"
-            icon="users"
-            accent="purple"
-          />
-
-          <StatCard
-            title="Sellers"
-            value={formatNumber(users.sellers)}
-            subtitle="Marketplace sellers"
-            icon="box"
-            accent="blue"
-          />
-
-          <StatCard
-            title="Low Stock"
-            value={formatNumber(products.lowStock)}
-            subtitle={`${formatNumber(products.outOfStock)} out of stock`}
-            icon="activity"
-            accent="orange"
-          />
-
-          <StatCard
-            title="Delivered"
-            value={formatNumber(orders.delivered)}
-            subtitle={`${formatNumber(orders.cancelled)} cancelled orders`}
-            icon="package"
-            accent="green"
-          />
-
-        </section>
-
-
-        {/* ====================================================
-            ANALYTICS
-        ==================================================== */}
-
-        <section className="mb-7 grid grid-cols-1 gap-6 xl:grid-cols-3">
-
-          {/* DONUT */}
-
-          <GlassCard className="p-6 sm:p-7">
-
-            <div className="flex items-start justify-between">
-
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-400/70">
-                  Analytics
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black">
-                  Order Status
-                </h2>
-
-                <p className="mt-1 text-sm text-white/25">
-                  Current order distribution
-                </p>
+            {recentOrders.length === 0 ? (
+              <div className="empty-state">
+                <div>🛒</div>
+                <p>No recent orders found.</p>
               </div>
-
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-purple-500/20 bg-purple-500/10 text-purple-300">
-                <Icon type="chart" size={21} />
-              </div>
-
-            </div>
-
-            <div className="py-5">
-              <DonutChart
-                data={orderChartData}
-                total={totalOrders}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-
-              {orderChartData.map((item) => (
-                <div
-                  key={item.label}
-                  className="group flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.025] px-3 py-2.5 transition hover:border-white/10 hover:bg-white/[0.05]"
-                >
-                  <div className="flex items-center gap-2">
-
-                    <span
-                      className="h-2.5 w-2.5 rounded-full"
-                      style={{
-                        backgroundColor:
-                          item.svgColor,
-                      }}
-                    />
-
-                    <span className="text-xs text-white/40">
-                      {item.label}
-                    </span>
-
-                  </div>
-
-                  <span
-                    className={`text-sm font-black ${item.text}`}
-                  >
-                    {item.value}
-                  </span>
-                </div>
-              ))}
-
-            </div>
-
-          </GlassCard>
-
-
-          {/* BAR CHART */}
-
-          <GlassCard className="p-6 sm:p-7 xl:col-span-2">
-
-            <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-400/70">
-                  Performance
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black">
-                  Order Overview
-                </h2>
-
-                <p className="mt-1 text-sm text-white/25">
-                  Real-time distribution across order stages
-                </p>
-              </div>
-
-              <div className="inline-flex w-fit items-center gap-2 rounded-xl border border-green-500/20 bg-green-500/10 px-4 py-2 text-xs font-bold text-green-300">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
-                Live Data
-              </div>
-
-            </div>
-
-            <div className="space-y-6">
-
-              {orderChartData.map((item) => (
-                <ProgressBar
-                  key={item.label}
-                  label={item.label}
-                  value={item.value}
-                  total={totalOrders}
-                  color={item.color}
-                  icon={item.icon}
-                />
-              ))}
-
-            </div>
-
-            {/* Mini metrics */}
-
-            <div className="mt-8 grid grid-cols-3 gap-3">
-
-              <div className="group rounded-2xl border border-white/5 bg-white/[0.025] p-4 text-center transition hover:-translate-y-1 hover:border-purple-500/20 hover:bg-purple-500/[0.04]">
-                <p className="text-[10px] uppercase tracking-wider text-white/25">
-                  Customers
-                </p>
-
-                <p className="mt-2 text-xl font-black">
-                  {formatNumber(users.customers)}
-                </p>
-              </div>
-
-              <div className="group rounded-2xl border border-white/5 bg-white/[0.025] p-4 text-center transition hover:-translate-y-1 hover:border-blue-500/20 hover:bg-blue-500/[0.04]">
-                <p className="text-[10px] uppercase tracking-wider text-white/25">
-                  Sellers
-                </p>
-
-                <p className="mt-2 text-xl font-black">
-                  {formatNumber(users.sellers)}
-                </p>
-              </div>
-
-              <div className="group rounded-2xl border border-white/5 bg-white/[0.025] p-4 text-center transition hover:-translate-y-1 hover:border-fuchsia-500/20 hover:bg-fuchsia-500/[0.04]">
-                <p className="text-[10px] uppercase tracking-wider text-white/25">
-                  Products
-                </p>
-
-                <p className="mt-2 text-xl font-black">
-                  {formatNumber(products.total)}
-                </p>
-              </div>
-
-            </div>
-
-          </GlassCard>
-
-        </section>
-
-
-        {/* ====================================================
-            HEALTH
-        ==================================================== */}
-
-        <section className="mb-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
-
-          {/* USERS */}
-
-          <GlassCard className="p-6 sm:p-7">
-
-            <div className="mb-7 flex items-center justify-between">
-
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-400/70">
-                  Community
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black">
-                  User Overview
-                </h2>
-              </div>
-
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-purple-500/20 bg-purple-500/10 text-purple-300">
-                <Icon type="users" size={21} />
-              </div>
-
-            </div>
-
-            <div className="space-y-6">
-
-              <ProgressBar
-                label="Customers"
-                value={Number(users.customers) || 0}
-                total={userTotal || 1}
-                color="bg-purple-500"
-                icon="🧑"
-              />
-
-              <ProgressBar
-                label="Sellers"
-                value={Number(users.sellers) || 0}
-                total={userTotal || 1}
-                color="bg-fuchsia-500"
-                icon="🏪"
-              />
-
-              <ProgressBar
-                label="Admins"
-                value={Number(users.admins) || 0}
-                total={userTotal || 1}
-                color="bg-blue-500"
-                icon="🛡️"
-              />
-
-            </div>
-
-            <div className="mt-7 grid grid-cols-2 gap-4">
-
-              <div className="rounded-2xl border border-green-500/10 bg-green-500/[0.04] p-5 transition hover:-translate-y-1">
-                <p className="text-xs text-white/25">
-                  Active Accounts
-                </p>
-
-                <p className="mt-2 text-3xl font-black text-green-300">
-                  {formatNumber(users.active)}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-red-500/10 bg-red-500/[0.04] p-5 transition hover:-translate-y-1">
-                <p className="text-xs text-white/25">
-                  Inactive Accounts
-                </p>
-
-                <p className="mt-2 text-3xl font-black text-red-300">
-                  {formatNumber(users.inactive)}
-                </p>
-              </div>
-
-            </div>
-
-          </GlassCard>
-
-
-          {/* PRODUCTS */}
-
-          <GlassCard className="p-6 sm:p-7">
-
-            <div className="mb-7 flex items-center justify-between">
-
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-400/70">
-                  Inventory
-                </p>
-
-                <h2 className="mt-2 text-2xl font-black">
-                  Product Health
-                </h2>
-              </div>
-
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-fuchsia-500/20 bg-fuchsia-500/10 text-fuchsia-300">
-                <Icon type="box" size={21} />
-              </div>
-
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-
-              <div className="group rounded-2xl border border-green-500/10 bg-green-500/[0.04] p-5 transition duration-300 hover:-translate-y-1 hover:bg-green-500/[0.07]">
-                <p className="text-xs text-white/25">
-                  Active
-                </p>
-
-                <p className="mt-2 text-3xl font-black text-green-300">
-                  {formatNumber(products.active)}
-                </p>
-              </div>
-
-              <div className="group rounded-2xl border border-white/5 bg-white/[0.025] p-5 transition duration-300 hover:-translate-y-1">
-                <p className="text-xs text-white/25">
-                  Inactive
-                </p>
-
-                <p className="mt-2 text-3xl font-black">
-                  {formatNumber(products.inactive)}
-                </p>
-              </div>
-
-              <div className="group rounded-2xl border border-yellow-500/10 bg-yellow-500/[0.04] p-5 transition duration-300 hover:-translate-y-1">
-                <p className="text-xs text-white/25">
-                  Low Stock
-                </p>
-
-                <p className="mt-2 text-3xl font-black text-yellow-300">
-                  {formatNumber(products.lowStock)}
-                </p>
-              </div>
-
-              <div className="group rounded-2xl border border-red-500/10 bg-red-500/[0.04] p-5 transition duration-300 hover:-translate-y-1">
-                <p className="text-xs text-white/25">
-                  Out of Stock
-                </p>
-
-                <p className="mt-2 text-3xl font-black text-red-300">
-                  {formatNumber(products.outOfStock)}
-                </p>
-              </div>
-
-            </div>
-
-            <div className="mt-6">
-              <ProgressBar
-                label="Active Product Ratio"
-                value={Number(products.active) || 0}
-                total={productTotal || 1}
-                color="bg-gradient-to-r from-purple-500 to-fuchsia-500"
-                icon="📦"
-              />
-            </div>
-
-          </GlassCard>
-
-        </section>
-
-
-        {/* ====================================================
-            RECENT ORDERS
-        ==================================================== */}
-
-        <GlassCard
-          className="mb-10 overflow-hidden"
-          hover={false}
-        >
-
-          <div className="flex flex-col gap-4 border-b border-white/[0.07] p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
-
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-400/70">
-                Activity
-              </p>
-
-              <h2 className="mt-2 text-2xl font-black">
-                Recent Orders
-              </h2>
-
-              <p className="mt-1 text-sm text-white/25">
-                Latest customer order activity
-              </p>
-            </div>
-
-            <Link
-              to="/admin/orders"
-              className="group inline-flex w-fit items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-bold text-white/60 transition hover:border-purple-500/20 hover:bg-purple-500/10 hover:text-white"
-            >
-              View All
-              <Icon type="arrow" size={16} />
-            </Link>
-
-          </div>
-
-
-          {recentOrders.length === 0 ? (
-
-            <div className="p-12 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/[0.03] text-2xl">
-                🛒
-              </div>
-
-              <p className="mt-4 text-sm text-white/25">
-                No recent orders found.
-              </p>
-            </div>
-
-          ) : (
-
-            <div className="overflow-x-auto">
-
-              <table className="w-full min-w-[900px]">
-
-                <thead>
-                  <tr className="border-b border-white/[0.05] text-left text-[10px] uppercase tracking-[0.18em] text-white/20">
-
-                    <th className="px-7 py-5">
-                      Order
-                    </th>
-
-                    <th className="px-7 py-5">
-                      Customer
-                    </th>
-
-                    <th className="px-7 py-5">
-                      Items
-                    </th>
-
-                    <th className="px-7 py-5">
-                      Amount
-                    </th>
-
-                    <th className="px-7 py-5">
-                      Status
-                    </th>
-
-                    <th className="px-7 py-5">
-                      Date
-                    </th>
-
-                  </tr>
-                </thead>
-
-                <tbody>
-
-                  {recentOrders.map((order) => (
-
-                    <tr
-                      key={order._id}
-                      className="group border-b border-white/[0.04] transition hover:bg-purple-500/[0.025]"
-                    >
-
-                      <td className="px-7 py-5">
-
-                        <Link
-                          to={`/admin/orders/${order._id}`}
-                          className="font-black text-purple-300 transition group-hover:text-fuchsia-300"
-                        >
-                          #
-                          {String(order._id || "")
-                            .slice(-8)
-                            .toUpperCase()}
-                        </Link>
-
-                      </td>
-
-                      <td className="px-7 py-5">
-
-                        <div className="flex items-center gap-3">
-
-                          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-fuchsia-600 font-black shadow-lg shadow-purple-950/20">
-                            {order.user?.name
-                              ?.charAt(0)
-                              ?.toUpperCase() || "U"}
-                          </div>
-
-                          <div className="min-w-0">
-
-                            <p className="font-bold">
-                              {order.user?.name ||
-                                "Unknown"}
-                            </p>
-
-                            <p className="max-w-[180px] truncate text-xs text-white/25">
-                              {order.user?.email ||
-                                "N/A"}
-                            </p>
-
-                          </div>
-
-                        </div>
-
-                      </td>
-
-                      <td className="px-7 py-5 text-white/45">
-                        {order.items?.length || 0}
-                      </td>
-
-                      <td className="px-7 py-5 font-black">
-                        {formatCurrency(
-                          order.totalPrice
-                        )}
-                      </td>
-
-                      <td className="px-7 py-5">
-
-                        <span
-                          className={`
-                            inline-flex rounded-full
-                            border px-3 py-1.5
-                            text-xs font-bold capitalize
-                            ${getStatusStyle(
-                              order.orderStatus
-                            )}
-                          `}
-                        >
-                          {order.orderStatus ||
-                            "pending"}
-                        </span>
-
-                      </td>
-
-                      <td className="px-7 py-5 text-sm text-white/25">
-                        {formatDate(
-                          order.createdAt
-                        )}
-                      </td>
-
+            ) : (
+              <div className="overflow-x-auto">
+
+                <table className="admin-table">
+
+                  <thead>
+                    <tr>
+                      <th>ORDER</th>
+                      <th>CUSTOMER</th>
+                      <th>ITEMS</th>
+                      <th>AMOUNT</th>
+                      <th>STATUS</th>
+                      <th>DATE</th>
                     </tr>
+                  </thead>
 
-                  ))}
+                  <tbody>
 
-                </tbody>
+                    {recentOrders.map((order) => (
 
-              </table>
+                      <tr key={order._id}>
 
-            </div>
+                        <td>
+                          <Link
+                            to={`/admin/orders/${order._id}`}
+                            className="order-id"
+                          >
+                            #
+                            {order._id
+                              ?.slice(-8)
+                              .toUpperCase()}
+                          </Link>
+                        </td>
 
-          )}
+                        <td>
+                          <div className="customer-cell">
 
-        </GlassCard>
+                            <div className="avatar">
+                              {order.user?.name
+                                ?.charAt(0)
+                                ?.toUpperCase() ||
+                                "U"}
+                            </div>
 
+                            <div>
+                              <p className="customer-name">
+                                {order.user?.name ||
+                                  "Unknown"}
+                              </p>
 
-        {/* ====================================================
-            RECENT USERS
-        ==================================================== */}
+                              <p className="customer-email">
+                                {order.user?.email ||
+                                  "N/A"}
+                              </p>
+                            </div>
 
-        <GlassCard
-          className="mb-10 overflow-hidden"
-          hover={false}
-        >
+                          </div>
+                        </td>
 
-          <div className="flex flex-col gap-4 border-b border-white/[0.07] p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+                        <td>
+                          {order.items?.length || 0}
+                        </td>
 
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-fuchsia-400/70">
-                Community
-              </p>
+                        <td>
+                          <strong>
+                            {formatCurrency(
+                              order.totalPrice
+                            )}
+                          </strong>
+                        </td>
 
-              <h2 className="mt-2 text-2xl font-black">
-                Recent Users
-              </h2>
+                        <td>
+                          <span
+                            className={`order-status ${getStatusClass(
+                              order.orderStatus
+                            )}`}
+                          >
+                            {order.orderStatus ||
+                              "pending"}
+                          </span>
+                        </td>
 
-              <p className="mt-1 text-sm text-white/25">
-                Latest registered members
-              </p>
-            </div>
+                        <td>
+                          {formatDate(
+                            order.createdAt
+                          )}
+                        </td>
 
-            <Link
-              to="/admin/users"
-              className="group inline-flex w-fit items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2.5 text-sm font-bold text-white/60 transition hover:border-purple-500/20 hover:bg-purple-500/10 hover:text-white"
-            >
-              Manage Users
-              <Icon type="arrow" size={16} />
-            </Link>
+                      </tr>
 
-          </div>
+                    ))}
 
+                  </tbody>
 
-          {recentUsers.length === 0 ? (
+                </table>
+              </div>
+            )}
 
-            <div className="p-12 text-center text-sm text-white/25">
-              No recent users found.
-            </div>
+          </section>
 
-          ) : (
+          {/* ==================================================
+              RECENT USERS
+          ================================================== */}
 
-            <div className="grid grid-cols-1 gap-4 p-6 md:grid-cols-2 xl:grid-cols-3 sm:p-7">
+          <section className="glass-panel overflow-hidden mb-10">
 
-              {recentUsers.map((recentUser) => (
+            <div className="section-header p-7 border-b border-white/10">
 
-                <div
-                  key={recentUser._id}
-                  className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.025] p-5 transition-all duration-500 hover:-translate-y-1 hover:border-purple-500/20 hover:bg-white/[0.045]"
-                >
+              <div>
+                <p className="section-kicker">
+                  COMMUNITY
+                </p>
 
-                  <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-purple-500/10 blur-3xl transition duration-700 group-hover:scale-150" />
+                <h2 className="section-title">
+                  Recent Users
+                </h2>
 
-                  <div className="relative flex items-center gap-4">
-
-                    <div className="relative flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-600 to-fuchsia-600 text-lg font-black shadow-lg shadow-purple-950/20">
-                      {recentUser.name
-                        ?.charAt(0)
-                        ?.toUpperCase() || "U"}
-
-                      <span className="absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-[#08050e] bg-green-400" />
-                    </div>
-
-                    <div className="min-w-0">
-
-                      <p className="truncate font-bold">
-                        {recentUser.name ||
-                          "Unknown User"}
-                      </p>
-
-                      <p className="mt-1 truncate text-xs text-white/25">
-                        {recentUser.email || "N/A"}
-                      </p>
-
-                    </div>
-
-                  </div>
-
-                  <div className="relative mt-5 flex items-center justify-between">
-
-                    <span className="rounded-full border border-purple-500/20 bg-purple-500/10 px-3 py-1.5 text-xs font-bold capitalize text-purple-300">
-                      {recentUser.role ||
-                        "customer"}
-                    </span>
-
-                    <span className="text-xs text-white/20">
-                      {formatDate(
-                        recentUser.createdAt
-                      )}
-                    </span>
-
-                  </div>
-
-                </div>
-
-              ))}
-
-            </div>
-
-          )}
-
-        </GlassCard>
-
-
-        {/* ====================================================
-            QUICK ACTIONS
-        ==================================================== */}
-
-        <section className="pb-10">
-
-          <div className="mb-6">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-400/70">
-              Control Center
-            </p>
-
-            <h2 className="mt-2 text-3xl font-black">
-              Quick Actions
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
-
-            {[
-              {
-                to: "/admin/users",
-                icon: "users",
-                title: "Manage Users",
-                text: "Control customers, sellers and admin accounts.",
-              },
-              {
-                to: "/admin/products",
-                icon: "box",
-                title: "Manage Products",
-                text: "Manage products, inventory and product status.",
-              },
-              {
-                to: "/admin/orders",
-                icon: "cart",
-                title: "Manage Orders",
-                text: "Review orders, customers and payment information.",
-              },
-              {
-                to: "/admin/analytics",
-                icon: "chart",
-                title: "Analytics",
-                text: "Explore sales and platform performance.",
-              },
-            ].map((item) => (
+                <p className="section-subtitle">
+                  Latest registered members
+                </p>
+              </div>
 
               <Link
-                key={item.title}
-                to={item.to}
-                className="group relative overflow-hidden rounded-[28px] border border-white/[0.08] bg-white/[0.035] p-6 backdrop-blur-2xl transition-all duration-500 hover:-translate-y-2 hover:border-purple-500/30 hover:bg-purple-500/[0.045] hover:shadow-2xl hover:shadow-purple-950/20"
+                to="/admin/users"
+                className="glass-button"
               >
+                Manage Users →
+              </Link>
 
-                <div className="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-purple-500/10 blur-3xl transition duration-700 group-hover:scale-150" />
+            </div>
 
-                <div className="relative">
+            {recentUsers.length === 0 ? (
+              <div className="empty-state">
+                <div>👥</div>
+                <p>No recent users found.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 p-7">
 
-                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-purple-500/20 bg-purple-500/10 text-purple-300 transition duration-500 group-hover:rotate-6 group-hover:scale-110">
-                    <Icon type={item.icon} size={25} />
+                {recentUsers.map((recentUser) => (
+
+                  <div
+                    key={recentUser._id}
+                    className="user-card"
+                  >
+
+                    <div className="flex items-center gap-4">
+
+                      <div className="avatar avatar-large">
+                        {recentUser.name
+                          ?.charAt(0)
+                          ?.toUpperCase() ||
+                          "U"}
+
+                        <span className="online-dot" />
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+
+                        <p className="font-bold truncate text-white">
+                          {recentUser.name ||
+                            "Unknown User"}
+                        </p>
+
+                        <p className="text-xs text-white/30 truncate mt-1">
+                          {recentUser.email ||
+                            "N/A"}
+                        </p>
+
+                      </div>
+
+                    </div>
+
+                    <div className="flex items-center justify-between mt-5">
+
+                      <span className="role-badge">
+                        {recentUser.role ||
+                          "customer"}
+                      </span>
+
+                      <span className="text-xs text-white/25">
+                        {formatDate(
+                          recentUser.createdAt
+                        )}
+                      </span>
+
+                    </div>
+
+                  </div>
+                ))}
+              </div>
+            )}
+
+          </section>
+
+          {/* ==================================================
+              QUICK ACTIONS
+          ================================================== */}
+
+          <section className="pb-10">
+
+            <div className="mb-6">
+              <p className="section-kicker">
+                CONTROL CENTER
+              </p>
+
+              <h2 className="text-3xl font-black mt-2">
+                Quick Actions
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+
+              {[
+                {
+                  to: "/admin/users",
+                  icon: "👥",
+                  title: "Manage Users",
+                  text: "Control customers, sellers and admin accounts.",
+                },
+                {
+                  to: "/admin/products",
+                  icon: "📦",
+                  title: "Manage Products",
+                  text: "Manage products, stock and product status.",
+                },
+                {
+                  to: "/admin/orders",
+                  icon: "🛒",
+                  title: "Manage Orders",
+                  text: "Review orders and payment information.",
+                },
+                {
+                  to: "/admin/analytics",
+                  icon: "📈",
+                  title: "Analytics",
+                  text: "Explore sales and platform analytics.",
+                },
+              ].map((item) => (
+
+                <Link
+                  key={item.title}
+                  to={item.to}
+                  className="action-card"
+                >
+
+                  <div className="action-glow" />
+
+                  <div className="action-icon">
+                    {item.icon}
                   </div>
 
-                  <h3 className="mt-5 text-lg font-black">
+                  <h3>
                     {item.title}
                   </h3>
 
-                  <p className="mt-2 text-sm leading-6 text-white/30">
+                  <p>
                     {item.text}
                   </p>
 
-                  <div className="mt-5 flex items-center gap-2 text-sm font-black text-purple-300 transition group-hover:text-fuchsia-300">
-                    Open Panel
-                    <Icon type="arrow" size={16} />
-                  </div>
+                  <span className="action-link">
+                    Open Panel →
+                  </span>
 
-                </div>
+                </Link>
+              ))}
 
-              </Link>
+            </div>
 
-            ))}
+          </section>
 
-          </div>
+        </main>
+      </div>
+    </>
+  );
+};
 
-        </section>
+// ============================================================
+// GLOBAL DASHBOARD STYLES
+// ============================================================
 
-      </main>
+const DashboardStyles = () => {
+  return (
+    <style>{`
 
+      /* ======================================================
+         BASE
+      ====================================================== */
 
-      {/* ======================================================
-          INTERNAL ANIMATION CSS
-      ====================================================== */}
+      .admin-shell {
+        background:
+          radial-gradient(
+            circle at 10% 10%,
+            rgba(124, 58, 237, 0.16),
+            transparent 32%
+          ),
+          radial-gradient(
+            circle at 90% 15%,
+            rgba(217, 70, 239, 0.12),
+            transparent 30%
+          ),
+          radial-gradient(
+            circle at 50% 100%,
+            rgba(59, 130, 246, 0.10),
+            transparent 35%
+          ),
+          #03020a;
+        position: relative;
+        isolation: isolate;
+      }
 
-      <style>{`
-        .admin-glass-card {
-          transition:
-            transform 500ms cubic-bezier(.2,.8,.2,1),
-            border-color 500ms ease,
-            box-shadow 500ms ease,
-            background 500ms ease;
+      .background-layer {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 0;
+        overflow: hidden;
+      }
+
+      .grid-overlay {
+        position: absolute;
+        inset: 0;
+        opacity: 0.16;
+        background-image:
+          linear-gradient(
+            rgba(255,255,255,0.035) 1px,
+            transparent 1px
+          ),
+          linear-gradient(
+            90deg,
+            rgba(255,255,255,0.035) 1px,
+            transparent 1px
+          );
+        background-size: 55px 55px;
+        mask-image: linear-gradient(
+          to bottom,
+          black,
+          transparent 85%
+        );
+      }
+
+      /* ======================================================
+         AMBIENT LIGHT
+      ====================================================== */
+
+      .ambient {
+        position: absolute;
+        border-radius: 999px;
+        filter: blur(100px);
+        animation: ambientFloat 9s ease-in-out infinite;
+      }
+
+      .ambient-one {
+        width: 480px;
+        height: 480px;
+        background: rgba(124, 58, 237, 0.14);
+        top: -200px;
+        left: -160px;
+      }
+
+      .ambient-two {
+        width: 450px;
+        height: 450px;
+        background: rgba(217, 70, 239, 0.11);
+        right: -180px;
+        top: 25%;
+        animation-delay: -3s;
+      }
+
+      .ambient-three {
+        width: 500px;
+        height: 500px;
+        background: rgba(37, 99, 235, 0.08);
+        left: 30%;
+        bottom: -300px;
+        animation-delay: -6s;
+      }
+
+      .floating-orb {
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.7);
+        box-shadow:
+          0 0 20px rgba(168,85,247,0.8),
+          0 0 50px rgba(168,85,247,0.4);
+        animation: particleFloat 10s linear infinite;
+      }
+
+      .orb-one {
+        left: 15%;
+        top: 30%;
+      }
+
+      .orb-two {
+        left: 75%;
+        top: 55%;
+        animation-delay: -4s;
+      }
+
+      .orb-three {
+        left: 45%;
+        top: 75%;
+        animation-delay: -7s;
+      }
+
+      /* ======================================================
+         GLASS
+      ====================================================== */
+
+      .glass-panel,
+      .top-glass,
+      .glass-loader {
+        background:
+          linear-gradient(
+            135deg,
+            rgba(255,255,255,0.075),
+            rgba(255,255,255,0.018)
+          );
+        border: 1px solid rgba(255,255,255,0.10);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.10),
+          inset 0 -1px 0 rgba(255,255,255,0.025),
+          0 30px 80px rgba(0,0,0,0.28);
+        backdrop-filter: blur(28px) saturate(140%);
+        -webkit-backdrop-filter: blur(28px) saturate(140%);
+      }
+
+      .glass-panel {
+        border-radius: 30px;
+        position: relative;
+        overflow: hidden;
+        transition:
+          transform 0.45s ease,
+          border-color 0.45s ease,
+          box-shadow 0.45s ease;
+      }
+
+      .glass-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background:
+          linear-gradient(
+            120deg,
+            transparent 20%,
+            rgba(255,255,255,0.055) 45%,
+            transparent 70%
+          );
+        transform: translateX(-120%);
+        transition: transform 0.9s ease;
+      }
+
+      .glass-panel:hover::before {
+        transform: translateX(120%);
+      }
+
+      .glass-panel:hover {
+        border-color: rgba(168,85,247,0.25);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.13),
+          0 35px 100px rgba(0,0,0,0.35),
+          0 0 50px rgba(124,58,237,0.08);
+      }
+
+      .top-glass {
+        border-radius: 22px;
+        padding: 14px 18px;
+      }
+
+      /* ======================================================
+         HERO
+      ====================================================== */
+
+      .hero-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 30px;
+      }
+
+      .hero-title {
+        font-size: clamp(42px, 6vw, 78px);
+        line-height: 0.95;
+        font-weight: 950;
+        letter-spacing: -0.055em;
+        color: white;
+      }
+
+      .hero-title span {
+        background:
+          linear-gradient(
+            90deg,
+            #a78bfa,
+            #e879f9,
+            #8b5cf6,
+            #c084fc
+          );
+        background-size: 250% auto;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: gradientMove 5s linear infinite;
+      }
+
+      .hero-description {
+        max-width: 720px;
+        color: rgba(255,255,255,0.38);
+        margin-top: 20px;
+        line-height: 1.8;
+        font-size: 15px;
+      }
+
+      .hero-description strong {
+        color: white;
+      }
+
+      .hero-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      /* ======================================================
+         BADGES
+      ====================================================== */
+
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.04);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: rgba(255,255,255,0.55);
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.18em;
+      }
+
+      .status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        display: inline-block;
+        box-shadow: 0 0 12px currentColor;
+      }
+
+      .status-dot.green {
+        background: #22c55e;
+        color: #22c55e;
+      }
+
+      .status-dot.red {
+        background: #ef4444;
+        color: #ef4444;
+      }
+
+      .status-dot.purple {
+        background: #a855f7;
+        color: #a855f7;
+      }
+
+      .live-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 14px;
+        background: rgba(34,197,94,0.06);
+        border: 1px solid rgba(34,197,94,0.15);
+        color: #86efac;
+        font-size: 11px;
+        font-weight: 800;
+      }
+
+      /* ======================================================
+         BUTTONS
+      ====================================================== */
+
+      .glass-button,
+      .premium-button {
+        min-height: 44px;
+        padding: 11px 17px;
+        border-radius: 14px;
+        font-size: 13px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        cursor: pointer;
+        transition:
+          transform 0.3s ease,
+          box-shadow 0.3s ease,
+          background 0.3s ease;
+      }
+
+      .glass-button {
+        color: rgba(255,255,255,0.75);
+        background: rgba(255,255,255,0.045);
+        border: 1px solid rgba(255,255,255,0.09);
+      }
+
+      .glass-button:hover {
+        transform: translateY(-3px);
+        background: rgba(255,255,255,0.08);
+        box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+      }
+
+      .premium-button {
+        color: white;
+        background:
+          linear-gradient(
+            135deg,
+            #7c3aed,
+            #c026d3
+          );
+        border: 1px solid rgba(255,255,255,0.12);
+        box-shadow:
+          0 15px 35px rgba(124,58,237,0.25);
+      }
+
+      .premium-button:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow:
+          0 20px 45px rgba(124,58,237,0.4);
+      }
+
+      /* ======================================================
+         BRAND
+      ====================================================== */
+
+      .brand-orb {
+        width: 46px;
+        height: 46px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 21px;
+        font-weight: 950;
+        background:
+          linear-gradient(
+            135deg,
+            #7c3aed,
+            #d946ef
+          );
+        box-shadow:
+          0 10px 30px rgba(124,58,237,0.35),
+          inset 0 1px 1px rgba(255,255,255,0.35);
+      }
+
+      /* ======================================================
+         STAT CARDS
+      ====================================================== */
+
+      .stat-card {
+        position: relative;
+        min-height: 190px;
+        padding: 24px;
+        overflow: hidden;
+        border-radius: 26px;
+        border: 1px solid rgba(255,255,255,0.09);
+        background:
+          linear-gradient(
+            145deg,
+            rgba(255,255,255,0.065),
+            rgba(255,255,255,0.018)
+          );
+        backdrop-filter: blur(24px) saturate(140%);
+        -webkit-backdrop-filter: blur(24px) saturate(140%);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.09),
+          0 20px 50px rgba(0,0,0,0.2);
+        transition:
+          transform 0.45s cubic-bezier(.2,.8,.2,1),
+          border-color 0.45s ease,
+          box-shadow 0.45s ease;
+      }
+
+      .stat-card:hover {
+        transform:
+          perspective(800px)
+          rotateX(2deg)
+          rotateY(-2deg)
+          translateY(-8px);
+        border-color: rgba(168,85,247,0.25);
+        box-shadow:
+          0 30px 70px rgba(0,0,0,0.35),
+          0 0 45px rgba(124,58,237,0.08);
+      }
+
+      .card-shine {
+        position: absolute;
+        top: -120%;
+        left: -30%;
+        width: 50%;
+        height: 300%;
+        transform: rotate(25deg);
+        background: linear-gradient(
+          90deg,
+          transparent,
+          rgba(255,255,255,0.07),
+          transparent
+        );
+        transition: left 0.8s ease;
+        pointer-events: none;
+      }
+
+      .stat-card:hover .card-shine {
+        left: 130%;
+      }
+
+      .card-glow {
+        position: absolute;
+        right: -50px;
+        top: -50px;
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        filter: blur(45px);
+        opacity: 0.20;
+        background: #8b5cf6;
+        transition: transform 0.6s ease;
+      }
+
+      .stat-card:hover .card-glow {
+        transform: scale(1.5);
+      }
+
+      .accent-blue .card-glow {
+        background: #3b82f6;
+      }
+
+      .accent-orange .card-glow {
+        background: #f59e0b;
+      }
+
+      .accent-green .card-glow {
+        background: #22c55e;
+      }
+
+      .stat-label {
+        color: rgba(255,255,255,0.36);
+        font-size: 12px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+
+      .stat-value {
+        color: white;
+        font-size: clamp(30px, 3vw, 42px);
+        font-weight: 950;
+        letter-spacing: -0.04em;
+      }
+
+      .stat-subtitle {
+        color: rgba(255,255,255,0.25);
+        font-size: 11px;
+        margin-top: 7px;
+      }
+
+      .stat-icon {
+        width: 55px;
+        height: 55px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        background: rgba(255,255,255,0.045);
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.10);
+        transition:
+          transform 0.5s ease,
+          background 0.5s ease;
+      }
+
+      .stat-card:hover .stat-icon {
+        transform: rotate(8deg) scale(1.12);
+        background: rgba(255,255,255,0.08);
+      }
+
+      .stat-progress {
+        height: 4px;
+        flex: 1;
+        max-width: 130px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.05);
+        overflow: hidden;
+      }
+
+      .stat-progress div {
+        height: 100%;
+        width: 55%;
+        border-radius: inherit;
+        background:
+          linear-gradient(
+            90deg,
+            #8b5cf6,
+            #d946ef
+          );
+        animation: progressPulse 3s ease-in-out infinite;
+      }
+
+      .trend {
+        font-size: 9px;
+        font-weight: 900;
+        color: #c4b5fd;
+        letter-spacing: 0.12em;
+      }
+
+      /* ======================================================
+         SECTION HEADERS
+      ====================================================== */
+
+      .section-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 20px;
+      }
+
+      .section-kicker {
+        color: rgba(168,85,247,0.8);
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.25em;
+      }
+
+      .section-title {
+        color: white;
+        font-size: 25px;
+        font-weight: 950;
+        margin-top: 7px;
+        letter-spacing: -0.025em;
+      }
+
+      .section-subtitle {
+        color: rgba(255,255,255,0.27);
+        font-size: 12px;
+        margin-top: 4px;
+      }
+
+      .header-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(139,92,246,0.08);
+        border: 1px solid rgba(139,92,246,0.15);
+        font-size: 20px;
+      }
+
+      /* ======================================================
+         DONUT
+      ====================================================== */
+
+      .donut-wrapper {
+        display: flex;
+        justify-content: center;
+        padding: 30px 0 10px;
+      }
+
+      .donut {
+        width: 235px;
+        height: 235px;
+        border-radius: 50%;
+        padding: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow:
+          0 0 60px rgba(139,92,246,0.12),
+          inset 0 0 35px rgba(0,0,0,0.35);
+        animation: donutFloat 5s ease-in-out infinite;
+        transition: transform 0.5s ease;
+      }
+
+      .donut:hover {
+        transform: scale(1.05) rotate(5deg);
+      }
+
+      .donut-inner {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background:
+          radial-gradient(
+            circle,
+            #0d0818 0%,
+            #07040d 65%,
+            #03020a 100%
+          );
+        border: 1px solid rgba(255,255,255,0.08);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow:
+          inset 0 0 50px rgba(0,0,0,0.6);
+      }
+
+      .donut-number {
+        font-size: 43px;
+        line-height: 1;
+        font-weight: 950;
+      }
+
+      .donut-label {
+        color: rgba(255,255,255,0.28);
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.18em;
+        margin-top: 8px;
+      }
+
+      .chart-legend {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 11px;
+        border-radius: 13px;
+        background: rgba(255,255,255,0.025);
+        border: 1px solid rgba(255,255,255,0.045);
+        color: rgba(255,255,255,0.42);
+        font-size: 11px;
+        transition: all 0.3s ease;
+      }
+
+      .chart-legend:hover {
+        background: rgba(255,255,255,0.055);
+        transform: translateX(3px);
+      }
+
+      .chart-legend strong {
+        color: white;
+      }
+
+      .legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        box-shadow: 0 0 10px currentColor;
+      }
+
+      /* ======================================================
+         BAR CHART
+      ====================================================== */
+
+      .bar-chart {
+        margin-top: 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 19px;
+      }
+
+      .bar-row {
+        animation: fadeUp 0.7s both;
+      }
+
+      .bar-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .bar-name {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: rgba(255,255,255,0.50);
+        font-size: 12px;
+      }
+
+      .bar-icon {
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 9px;
+        background: rgba(255,255,255,0.045);
+        border: 1px solid rgba(255,255,255,0.06);
+      }
+
+      .bar-number {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .bar-number span {
+        color: rgba(255,255,255,0.25);
+        font-size: 10px;
+      }
+
+      .bar-number strong {
+        color: white;
+        font-size: 12px;
+      }
+
+      .bar-track {
+        height: 9px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.045);
+        overflow: hidden;
+      }
+
+      .bar-fill {
+        height: 100%;
+        border-radius: inherit;
+        transform-origin: left;
+        animation: barGrow 1.2s cubic-bezier(.2,.8,.2,1) both;
+        box-shadow: 0 0 18px currentColor;
+      }
+
+      /* ======================================================
+         MINI METRICS
+      ====================================================== */
+
+      .mini-metric {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 15px;
+        border-radius: 18px;
+        background: rgba(255,255,255,0.025);
+        border: 1px solid rgba(255,255,255,0.055);
+        transition:
+          transform 0.3s ease,
+          background 0.3s ease;
+      }
+
+      .mini-metric:hover {
+        transform: translateY(-4px);
+        background: rgba(255,255,255,0.055);
+      }
+
+      .mini-icon {
+        width: 39px;
+        height: 39px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(139,92,246,0.09);
+      }
+
+      .mini-metric p {
+        color: rgba(255,255,255,0.28);
+        font-size: 10px;
+      }
+
+      .mini-metric strong {
+        display: block;
+        color: white;
+        font-size: 18px;
+        margin-top: 2px;
+      }
+
+      /* ======================================================
+         HEALTH
+      ====================================================== */
+
+      .health-track {
+        height: 9px;
+        border-radius: 999px;
+        overflow: hidden;
+        background: rgba(255,255,255,0.045);
+      }
+
+      .health-fill {
+        height: 100%;
+        border-radius: inherit;
+        animation: barGrow 1.2s ease both;
+      }
+
+      .health-card {
+        border-radius: 20px;
+        padding: 18px;
+        border: 1px solid rgba(255,255,255,0.06);
+        background: rgba(255,255,255,0.025);
+      }
+
+      .health-card span {
+        display: block;
+        color: rgba(255,255,255,0.25);
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.15em;
+      }
+
+      .health-card strong {
+        display: block;
+        font-size: 29px;
+        font-weight: 950;
+        margin-top: 5px;
+      }
+
+      .green-health strong {
+        color: #4ade80;
+      }
+
+      .red-health strong {
+        color: #f87171;
+      }
+
+      /* ======================================================
+         INVENTORY
+      ====================================================== */
+
+      .inventory-card {
+        min-height: 130px;
+        padding: 20px;
+        border-radius: 22px;
+        border: 1px solid rgba(255,255,255,0.07);
+        background: rgba(255,255,255,0.025);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition:
+          transform 0.35s ease,
+          background 0.35s ease,
+          border-color 0.35s ease;
+      }
+
+      .inventory-card:hover {
+        transform: translateY(-5px);
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.14);
+      }
+
+      .inventory-card span {
+        display: block;
+        color: rgba(255,255,255,0.27);
+        font-size: 9px;
+        font-weight: 900;
+        letter-spacing: 0.13em;
+      }
+
+      .inventory-card strong {
+        display: block;
+        color: white;
+        font-size: 32px;
+        font-weight: 950;
+        margin-top: 6px;
+      }
+
+      .inventory-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255,255,255,0.045);
+        font-size: 21px;
+      }
+
+      .inventory-green {
+        border-color: rgba(34,197,94,0.12);
+      }
+
+      .inventory-green strong {
+        color: #4ade80;
+      }
+
+      .inventory-yellow {
+        border-color: rgba(234,179,8,0.12);
+      }
+
+      .inventory-yellow strong {
+        color: #facc15;
+      }
+
+      .inventory-red {
+        border-color: rgba(239,68,68,0.12);
+      }
+
+      .inventory-red strong {
+        color: #f87171;
+      }
+
+      /* ======================================================
+         TABLE
+      ====================================================== */
+
+      .admin-table {
+        width: 100%;
+        min-width: 850px;
+        border-collapse: collapse;
+      }
+
+      .admin-table th {
+        text-align: left;
+        padding: 18px 28px;
+        color: rgba(255,255,255,0.22);
+        font-size: 9px;
+        letter-spacing: 0.18em;
+        font-weight: 900;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+      }
+
+      .admin-table td {
+        padding: 18px 28px;
+        color: rgba(255,255,255,0.40);
+        font-size: 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.045);
+      }
+
+      .admin-table tbody tr {
+        transition:
+          background 0.3s ease,
+          transform 0.3s ease;
+      }
+
+      .admin-table tbody tr:hover {
+        background: rgba(139,92,246,0.045);
+      }
+
+      .order-id {
+        color: #a78bfa;
+        font-weight: 900;
+      }
+
+      .order-id:hover {
+        color: #e879f9;
+      }
+
+      .customer-cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .customer-name {
+        color: white;
+        font-weight: 800;
+      }
+
+      .customer-email {
+        color: rgba(255,255,255,0.22);
+        font-size: 10px;
+        margin-top: 3px;
+      }
+
+      .avatar {
+        width: 39px;
+        height: 39px;
+        flex-shrink: 0;
+        border-radius: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 950;
+        background:
+          linear-gradient(
+            135deg,
+            #7c3aed,
+            #d946ef
+          );
+        box-shadow:
+          0 8px 20px rgba(124,58,237,0.2);
+        position: relative;
+      }
+
+      .avatar-large {
+        width: 52px;
+        height: 52px;
+        border-radius: 17px;
+        font-size: 17px;
+      }
+
+      .online-dot {
+        position: absolute;
+        right: -2px;
+        bottom: -2px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #22c55e;
+        border: 2px solid #09050f;
+        box-shadow: 0 0 10px rgba(34,197,94,0.7);
+      }
+
+      .order-status {
+        display: inline-flex;
+        padding: 7px 10px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font-size: 10px;
+        font-weight: 900;
+        text-transform: capitalize;
+      }
+
+      .status-yellow {
+        color: #facc15;
+        background: rgba(234,179,8,0.08);
+        border-color: rgba(234,179,8,0.15);
+      }
+
+      .status-blue {
+        color: #60a5fa;
+        background: rgba(59,130,246,0.08);
+        border-color: rgba(59,130,246,0.15);
+      }
+
+      .status-indigo {
+        color: #818cf8;
+        background: rgba(99,102,241,0.08);
+        border-color: rgba(99,102,241,0.15);
+      }
+
+      .status-purple {
+        color: #c084fc;
+        background: rgba(168,85,247,0.08);
+        border-color: rgba(168,85,247,0.15);
+      }
+
+      .status-green {
+        color: #4ade80;
+        background: rgba(34,197,94,0.08);
+        border-color: rgba(34,197,94,0.15);
+      }
+
+      .status-red {
+        color: #f87171;
+        background: rgba(239,68,68,0.08);
+        border-color: rgba(239,68,68,0.15);
+      }
+
+      .status-default {
+        color: rgba(255,255,255,0.45);
+        background: rgba(255,255,255,0.04);
+        border-color: rgba(255,255,255,0.08);
+      }
+
+      /* ======================================================
+         USERS
+      ====================================================== */
+
+      .user-card {
+        padding: 20px;
+        border-radius: 22px;
+        background: rgba(255,255,255,0.025);
+        border: 1px solid rgba(255,255,255,0.06);
+        transition:
+          transform 0.4s ease,
+          background 0.4s ease,
+          border-color 0.4s ease;
+      }
+
+      .user-card:hover {
+        transform: translateY(-6px);
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(168,85,247,0.2);
+      }
+
+      .role-badge {
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: rgba(139,92,246,0.08);
+        border: 1px solid rgba(139,92,246,0.14);
+        color: #c4b5fd;
+        font-size: 9px;
+        font-weight: 900;
+        text-transform: capitalize;
+      }
+
+      /* ======================================================
+         QUICK ACTION
+      ====================================================== */
+
+      .action-card {
+        position: relative;
+        overflow: hidden;
+        padding: 25px;
+        min-height: 220px;
+        border-radius: 28px;
+        border: 1px solid rgba(255,255,255,0.08);
+        background:
+          linear-gradient(
+            145deg,
+            rgba(255,255,255,0.055),
+            rgba(255,255,255,0.018)
+          );
+        backdrop-filter: blur(24px);
+        -webkit-backdrop-filter: blur(24px);
+        transition:
+          transform 0.45s ease,
+          border-color 0.45s ease,
+          box-shadow 0.45s ease;
+      }
+
+      .action-card:hover {
+        transform:
+          perspective(800px)
+          rotateX(2deg)
+          rotateY(-2deg)
+          translateY(-8px);
+        border-color: rgba(168,85,247,0.30);
+        box-shadow:
+          0 30px 70px rgba(0,0,0,0.35),
+          0 0 45px rgba(124,58,237,0.10);
+      }
+
+      .action-glow {
+        position: absolute;
+        width: 150px;
+        height: 150px;
+        right: -70px;
+        top: -70px;
+        border-radius: 50%;
+        background: rgba(168,85,247,0.15);
+        filter: blur(45px);
+        transition: transform 0.6s ease;
+      }
+
+      .action-card:hover .action-glow {
+        transform: scale(1.7);
+      }
+
+      .action-icon {
+        position: relative;
+        width: 58px;
+        height: 58px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 27px;
+        background: rgba(139,92,246,0.08);
+        border: 1px solid rgba(139,92,246,0.15);
+        transition:
+          transform 0.45s ease,
+          background 0.45s ease;
+      }
+
+      .action-card:hover .action-icon {
+        transform: rotate(8deg) scale(1.1);
+        background: rgba(139,92,246,0.15);
+      }
+
+      .action-card h3 {
+        position: relative;
+        color: white;
+        font-size: 18px;
+        font-weight: 950;
+        margin-top: 20px;
+      }
+
+      .action-card p {
+        position: relative;
+        color: rgba(255,255,255,0.30);
+        font-size: 12px;
+        line-height: 1.7;
+        margin-top: 7px;
+      }
+
+      .action-link {
+        position: relative;
+        display: inline-block;
+        color: #a78bfa;
+        font-size: 11px;
+        font-weight: 900;
+        margin-top: 18px;
+        transition: color 0.3s ease;
+      }
+
+      .action-card:hover .action-link {
+        color: #e879f9;
+      }
+
+      /* ======================================================
+         EMPTY / LOADING
+      ====================================================== */
+
+      .empty-state {
+        min-height: 220px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255,255,255,0.25);
+        gap: 12px;
+      }
+
+      .empty-state div {
+        font-size: 40px;
+        opacity: 0.6;
+      }
+
+      .lock-orb,
+      .error-orb,
+      .icon-box {
+        width: 90px;
+        height: 90px;
+        border-radius: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 40px;
+        background:
+          linear-gradient(
+            145deg,
+            rgba(255,255,255,0.07),
+            rgba(255,255,255,0.02)
+          );
+        border: 1px solid rgba(255,255,255,0.10);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.10),
+          0 20px 50px rgba(0,0,0,0.25);
+      }
+
+      .error-orb {
+        background: rgba(239,68,68,0.07);
+        border-color: rgba(239,68,68,0.15);
+      }
+
+      /* ======================================================
+         LOADER
+      ====================================================== */
+
+      .loader-ring {
+        width: 110px;
+        height: 110px;
+        margin: auto;
+        border-radius: 50%;
+        padding: 4px;
+        background:
+          conic-gradient(
+            #7c3aed,
+            #d946ef,
+            #3b82f6,
+            #7c3aed
+          );
+        animation: spin 1.4s linear infinite;
+        box-shadow:
+          0 0 60px rgba(124,58,237,0.25);
+      }
+
+      .loader-core {
+        width: 100%;
+        height: 100%;
+        border-radius: inherit;
+        background: #08040f;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        font-weight: 950;
+      }
+
+      .loader-line {
+        width: 200px;
+        height: 4px;
+        margin-left: auto;
+        margin-right: auto;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.06);
+      }
+
+      .loader-line div {
+        height: 100%;
+        width: 50%;
+        background:
+          linear-gradient(
+            90deg,
+            #7c3aed,
+            #d946ef
+          );
+        animation: loaderMove 1.3s ease-in-out infinite;
+      }
+
+      /* ======================================================
+         ANIMATIONS
+      ====================================================== */
+
+      @keyframes ambientFloat {
+        0%, 100% {
+          transform: translate3d(0,0,0) scale(1);
         }
 
-        .admin-glass-card:hover {
-          transform: translateY(-5px);
-          border-color: rgba(168,85,247,.20);
-          box-shadow:
-            0 25px 90px rgba(0,0,0,.30),
-            0 0 50px rgba(168,85,247,.05);
+        50% {
+          transform: translate3d(25px,-30px,0) scale(1.08);
+        }
+      }
+
+      @keyframes particleFloat {
+        0% {
+          transform: translateY(100px) translateX(0);
+          opacity: 0;
         }
 
-        .admin-orb {
-          animation: adminOrb 9s ease-in-out infinite;
+        20% {
+          opacity: 1;
         }
 
-        .admin-orb-delay {
-          animation-delay: -4s;
+        80% {
+          opacity: 0.7;
         }
 
-        @keyframes adminOrb {
-          0%, 100% {
-            transform: translate3d(0,0,0) scale(1);
-          }
+        100% {
+          transform: translateY(-500px) translateX(100px);
+          opacity: 0;
+        }
+      }
 
-          50% {
-            transform: translate3d(30px,-25px,0) scale(1.08);
-          }
+      @keyframes gradientMove {
+        0% {
+          background-position: 0% 50%;
         }
 
-        .admin-chart-segment {
-          transform-origin: 100px 100px;
-          animation: chartSegment 1.2s cubic-bezier(.2,.8,.2,1) both;
+        100% {
+          background-position: 250% 50%;
+        }
+      }
+
+      @keyframes progressPulse {
+        0%, 100% {
+          width: 45%;
         }
 
-        @keyframes chartSegment {
-          from {
-            opacity: 0;
-            stroke-dasharray: 0 1000;
-          }
+        50% {
+          width: 75%;
+        }
+      }
 
-          to {
-            opacity: 1;
-          }
+      @keyframes donutFloat {
+        0%, 100% {
+          transform: translateY(0);
         }
 
-        .admin-progress-bar {
-          transform-origin: left center;
-          animation: progressBar 1.1s cubic-bezier(.2,.8,.2,1) both;
-          box-shadow: 0 0 15px rgba(168,85,247,.25);
+        50% {
+          transform: translateY(-7px);
+        }
+      }
+
+      @keyframes barGrow {
+        from {
+          transform: scaleX(0);
         }
 
-        @keyframes progressBar {
-          from {
-            width: 0 !important;
-          }
+        to {
+          transform: scaleX(1);
+        }
+      }
+
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
         }
 
-        @media (prefers-reduced-motion: reduce) {
-          .admin-glass-card,
-          .admin-orb,
-          .admin-chart-segment,
-          .admin-progress-bar {
-            animation: none !important;
-            transition: none !important;
-          }
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
-      `}</style>
+      }
 
-    </div>
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes loaderMove {
+        0% {
+          transform: translateX(-120%);
+        }
+
+        50% {
+          transform: translateX(100%);
+        }
+
+        100% {
+          transform: translateX(250%);
+        }
+      }
+
+      /* ======================================================
+         RESPONSIVE
+      ====================================================== */
+
+      @media (max-width: 900px) {
+        .hero-section {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .hero-actions {
+          width: 100%;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .glass-panel {
+          border-radius: 23px;
+        }
+
+        .top-glass {
+          border-radius: 18px;
+        }
+
+        .hero-title {
+          font-size: 45px;
+        }
+
+        .stat-card {
+          min-height: 165px;
+          padding: 20px;
+        }
+
+        .stat-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 15px;
+        }
+
+        .donut {
+          width: 205px;
+          height: 205px;
+        }
+
+        .section-title {
+          font-size: 22px;
+        }
+      }
+
+      /* ======================================================
+         REDUCED MOTION
+      ====================================================== */
+
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
+    `}</style>
   );
 };
 
