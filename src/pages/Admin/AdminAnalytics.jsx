@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
@@ -11,18 +12,31 @@ const RANGE_OPTIONS = [
   { label: "365 Days", value: 365 },
 ];
 
+/* =========================================================
+   MAIN COMPONENT
+========================================================= */
+
 const AdminAnalytics = () => {
   const { user, accessToken, isAuthenticated } = useAuthStore();
 
   const [range, setRange] = useState(30);
   const [analytics, setAnalytics] = useState(null);
-
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
-  const fetchAnalytics = async () => {
+  /* =======================================================
+     FETCH ANALYTICS
+  ======================================================= */
+
+  const fetchAnalytics = async (showRefresh = false) => {
     try {
-      setLoading(true);
+      if (showRefresh) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
       setError("");
 
       const response = await api.get("/admin/analytics", {
@@ -44,6 +58,7 @@ const AdminAnalytics = () => {
       );
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -52,6 +67,10 @@ const AdminAnalytics = () => {
       fetchAnalytics();
     }
   }, [range, accessToken, isAuthenticated]);
+
+  /* =======================================================
+     NORMALIZED DATA
+  ======================================================= */
 
   const stats = useMemo(() => {
     if (!analytics) {
@@ -103,33 +122,13 @@ const AdminAnalytics = () => {
     analytics?.ordersByStatus ||
     [];
 
-  const topProducts =
-    analytics?.topProducts ||
-    [];
+  const topProducts = analytics?.topProducts || [];
 
-  const topSellers =
-    analytics?.topSellers ||
-    [];
+  const topSellers = analytics?.topSellers || [];
 
-  const maxDailySale = Math.max(
-    ...dailySales.map((item) =>
-      Number(item.sales ?? item.total ?? item.amount ?? 0)
-    ),
-    1
-  );
-
-  const maxProductValue = Math.max(
-    ...topProducts.map((item) =>
-      Number(
-        item.sales ??
-          item.revenue ??
-          item.total ??
-          item.amount ??
-          0
-      )
-    ),
-    1
-  );
+  /* =======================================================
+     HELPERS
+  ======================================================= */
 
   const formatCurrency = (value) => {
     return `$${Number(value || 0).toLocaleString("en-US", {
@@ -145,275 +144,412 @@ const AdminAnalytics = () => {
   const getPercentage = (value, total) => {
     if (!total) return 0;
 
-    return Math.round((Number(value || 0) / Number(total)) * 100);
+    return Math.round(
+      (Number(value || 0) / Number(total)) * 100
+    );
   };
+
+  const getSaleValue = (item) => {
+    return Number(
+      item?.sales ??
+        item?.total ??
+        item?.amount ??
+        item?.revenue ??
+        0
+    );
+  };
+
+  const maxDailySale = Math.max(
+    ...dailySales.map(getSaleValue),
+    1
+  );
+
+  const maxProductValue = Math.max(
+    ...topProducts.map(getSaleValue),
+    1
+  );
+
+  /* =======================================================
+     ACCESS
+  ======================================================= */
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#080612] text-white flex items-center justify-center px-4">
+      <PageCenter>
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-3">
+          <div className="text-5xl mb-5">🔐</div>
+
+          <h2 className="text-2xl font-black">
             Authentication Required
           </h2>
 
+          <p className="text-gray-500 mt-2 mb-6">
+            Please login to access admin analytics.
+          </p>
+
           <Link
             to="/login"
-            className="inline-flex px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 transition"
+            className="inline-flex rounded-xl bg-purple-600 px-6 py-3 font-semibold transition hover:bg-purple-500"
           >
             Login
           </Link>
         </div>
-      </div>
+      </PageCenter>
     );
   }
 
   if (user?.role !== "admin") {
     return (
-      <div className="min-h-screen bg-[#080612] text-white flex items-center justify-center px-4">
+      <PageCenter>
         <div className="text-center">
-          <div className="text-5xl mb-5">🔒</div>
+          <div className="text-6xl mb-5">🚫</div>
 
-          <h2 className="text-2xl font-bold mb-3">
+          <h2 className="text-3xl font-black">
             Access Denied
           </h2>
 
-          <p className="text-gray-400 mb-6">
+          <p className="text-gray-500 mt-2 mb-6">
             Only administrators can access analytics.
           </p>
 
           <Link
             to="/"
-            className="inline-flex px-6 py-3 rounded-xl bg-purple-600 hover:bg-purple-700 transition"
+            className="inline-flex rounded-xl bg-purple-600 px-6 py-3 font-semibold transition hover:bg-purple-500"
           >
             Back to Home
           </Link>
         </div>
-      </div>
+      </PageCenter>
     );
   }
 
+  /* =======================================================
+     PAGE
+  ======================================================= */
+
   return (
-    <div className="min-h-screen bg-[#080612] text-white px-4 sm:px-6 lg:px-8 py-8">
-      <div className="max-w-7xl mx-auto">
+    <main className="relative min-h-screen overflow-hidden bg-[#06030d] px-4 pb-20 pt-28 text-white sm:px-6 lg:px-8">
 
-        {/* =====================================================
+      {/* ===================================================
+          BACKGROUND GLOW
+      =================================================== */}
+
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+
+        <div className="absolute -left-40 top-20 h-96 w-96 rounded-full bg-purple-700/10 blur-[120px] animate-pulse" />
+
+        <div
+          className="absolute right-[-120px] top-40 h-[450px] w-[450px] rounded-full bg-fuchsia-600/10 blur-[130px] animate-pulse"
+          style={{ animationDelay: "1.5s" }}
+        />
+
+        <div
+          className="absolute bottom-0 left-1/3 h-80 w-80 rounded-full bg-violet-600/10 blur-[120px] animate-pulse"
+          style={{ animationDelay: "3s" }}
+        />
+
+      </div>
+
+      <div className="relative mx-auto max-w-7xl">
+
+        {/* =================================================
             HEADER
-        ===================================================== */}
+        ================================================= */}
 
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5 mb-8">
+        <section className="mb-8">
 
-          <div>
-            <p className="text-purple-400 text-sm font-semibold uppercase tracking-widest mb-2">
-              AmitShop Admin
-            </p>
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
 
-            <h1 className="text-3xl sm:text-4xl font-black">
-              Analytics Dashboard
-            </h1>
+            <div>
 
-            <p className="text-gray-400 mt-2">
-              Monitor sales, orders, customers and store performance.
-            </p>
-          </div>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-purple-500/20 bg-purple-500/10 px-3 py-1.5">
 
-          <div className="flex flex-wrap gap-2">
-            {RANGE_OPTIONS.map((option) => (
+                <span className="h-2 w-2 animate-pulse rounded-full bg-purple-400" />
+
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-purple-300">
+                  Live Analytics
+                </span>
+
+              </div>
+
+              <p className="mb-2 text-sm font-semibold uppercase tracking-[0.3em] text-purple-400/70">
+                AmitShop Admin
+              </p>
+
+              <h1 className="text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+                Analytics
+              </h1>
+
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-gray-500 sm:text-base">
+                Track your store performance, revenue, orders,
+                customers and product growth from one powerful dashboard.
+              </p>
+
+            </div>
+
+            {/* RANGE + REFRESH */}
+
+            <div className="flex flex-col gap-3">
+
+              <div className="flex flex-wrap gap-2 rounded-2xl border border-white/10 bg-white/[0.035] p-2 backdrop-blur-xl">
+
+                {RANGE_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => setRange(option.value)}
+                    className={`relative overflow-hidden rounded-xl px-3 py-2 text-xs font-bold transition-all duration-300 sm:px-4 sm:text-sm ${
+                      range === option.value
+                        ? "bg-purple-600 text-white shadow-lg shadow-purple-900/40"
+                        : "text-gray-500 hover:bg-white/10 hover:text-white"
+                    }`}
+                  >
+                    {range === option.value && (
+                      <span className="absolute inset-0 animate-pulse bg-purple-400/10" />
+                    )}
+
+                    <span className="relative">
+                      {option.label}
+                    </span>
+                  </button>
+                ))}
+
+              </div>
+
               <button
-                key={option.value}
-                onClick={() => setRange(option.value)}
-                className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                  range === option.value
-                    ? "bg-purple-600 text-white shadow-lg shadow-purple-900/40"
-                    : "bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 hover:text-white"
-                }`}
+                type="button"
+                onClick={() => fetchAnalytics(true)}
+                disabled={refreshing}
+                className="group flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-4 py-2.5 text-sm font-semibold text-gray-400 transition hover:border-purple-500/30 hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {option.label}
-              </button>
-            ))}
-          </div>
-        </div>
+                <span
+                  className={
+                    refreshing
+                      ? "animate-spin"
+                      : "transition-transform duration-500 group-hover:rotate-180"
+                  }
+                >
+                  ↻
+                </span>
 
-        {/* =====================================================
+                {refreshing ? "Refreshing..." : "Refresh Analytics"}
+              </button>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* =================================================
             ERROR
-        ===================================================== */}
+        ================================================= */}
 
         {error && (
-          <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-red-300">
+          <div className="mb-6 animate-[fadeIn_0.4s_ease-out] rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
             {error}
           </div>
         )}
 
-        {/* =====================================================
+        {/* =================================================
             LOADING
-        ===================================================== */}
+        ================================================= */}
 
         {loading ? (
-          <div className="space-y-6">
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
-              {[1, 2, 3, 4].map((item) => (
-                <div
-                  key={item}
-                  className="h-36 rounded-2xl bg-white/5 border border-white/10 animate-pulse"
-                />
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-              <div className="xl:col-span-2 h-96 rounded-2xl bg-white/5 border border-white/10 animate-pulse" />
-              <div className="h-96 rounded-2xl bg-white/5 border border-white/10 animate-pulse" />
-            </div>
-
-          </div>
+          <AnalyticsSkeleton />
         ) : (
           <>
-            {/* =================================================
-                STAT CARDS
-            ================================================= */}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-6">
+            {/* =============================================
+                KPI CARDS
+            ============================================= */}
 
-              <StatCard
+            <section className="mb-6 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+
+              <MetricCard
                 icon="💰"
-                title="Total Sales"
+                label="Total Sales"
                 value={formatCurrency(stats.totalSales)}
                 subtitle={`Last ${range} days`}
+                accent="Revenue"
+                delay="0ms"
               />
 
-              <StatCard
+              <MetricCard
                 icon="🛒"
-                title="Total Orders"
+                label="Total Orders"
                 value={formatNumber(stats.totalOrders)}
                 subtitle={`Last ${range} days`}
+                accent="Orders"
+                delay="100ms"
               />
 
-              <StatCard
+              <MetricCard
                 icon="👥"
-                title="Customers"
+                label="Customers"
                 value={formatNumber(stats.customers)}
                 subtitle="Registered customers"
+                accent="Users"
+                delay="200ms"
               />
 
-              <StatCard
+              <MetricCard
                 icon="📦"
-                title="Products Sold"
+                label="Products Sold"
                 value={formatNumber(stats.productsSold)}
                 subtitle={`Last ${range} days`}
+                accent="Units"
+                delay="300ms"
               />
 
-            </div>
+            </section>
 
-            {/* =================================================
-                DAILY SALES + PAYMENT
-            ================================================= */}
+            {/* =============================================
+                SALES + PAYMENT
+            ============================================= */}
 
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+            <section className="mb-6 grid grid-cols-1 gap-6 xl:grid-cols-3">
 
-              {/* DAILY SALES */}
+              {/* SALES CHART */}
 
-              <section className="xl:col-span-2 rounded-3xl border border-white/10 bg-white/[0.035] backdrop-blur-xl p-5 sm:p-6">
+              <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-5 backdrop-blur-xl transition duration-500 hover:border-purple-500/20 sm:p-6 xl:col-span-2">
 
-                <div className="flex items-center justify-between mb-7">
+                <Glow />
+
+                <div className="relative mb-8 flex items-start justify-between">
+
                   <div>
-                    <h2 className="text-xl font-bold">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-purple-400/70">
+                      Performance
+                    </p>
+
+                    <h2 className="mt-1 text-2xl font-black">
                       Sales Overview
                     </h2>
 
-                    <p className="text-sm text-gray-500 mt-1">
-                      Daily sales performance
+                    <p className="mt-1 text-sm text-gray-600">
+                      Daily revenue performance
                     </p>
                   </div>
 
-                  <div className="text-purple-400 text-2xl">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-purple-500/20 bg-purple-500/10 text-2xl">
                     📈
                   </div>
+
                 </div>
 
                 {dailySales.length === 0 ? (
                   <EmptyState text="No sales data available." />
                 ) : (
-                  <div className="h-72 flex items-end gap-2 sm:gap-3 overflow-x-auto pb-8">
+                  <div className="relative">
 
-                    {dailySales.map((item, index) => {
-                      const value = Number(
-                        item.sales ??
-                          item.total ??
-                          item.amount ??
-                          0
-                      );
+                    {/* Chart grid */}
 
-                      const height = Math.max(
-                        (value / maxDailySale) * 100,
-                        3
-                      );
+                    <div className="pointer-events-none absolute inset-0 flex flex-col justify-between pb-10 opacity-30">
 
-                      return (
+                      {[1, 2, 3, 4].map((line) => (
                         <div
-                          key={item._id || item.date || index}
-                          className="min-w-[28px] flex-1 h-full flex flex-col justify-end items-center group"
-                        >
+                          key={line}
+                          className="border-t border-dashed border-white/10"
+                        />
+                      ))}
 
-                          <div className="relative w-full flex justify-center">
+                    </div>
 
-                            <div
-                              className="w-full max-w-[38px] rounded-t-xl bg-gradient-to-t from-purple-700 to-fuchsia-400 transition-all duration-500 group-hover:from-purple-500 group-hover:to-pink-400"
-                              style={{
-                                height: `${height}%`,
-                                minHeight: "6px",
-                              }}
-                            />
+                    <div className="relative flex h-80 items-end gap-2 overflow-x-auto pb-8 pt-4 sm:gap-3">
 
-                            <div className="absolute bottom-full mb-2 hidden group-hover:block whitespace-nowrap bg-black border border-white/10 rounded-lg px-2 py-1 text-xs text-white z-10">
-                              {formatCurrency(value)}
+                      {dailySales.map((item, index) => {
+
+                        const value = getSaleValue(item);
+
+                        const height = Math.max(
+                          (value / maxDailySale) * 100,
+                          4
+                        );
+
+                        return (
+                          <div
+                            key={item._id || item.date || index}
+                            className="group/bar flex h-full min-w-[25px] flex-1 flex-col items-center justify-end"
+                          >
+
+                            <div className="relative flex h-full w-full items-end justify-center">
+
+                              {/* Tooltip */}
+
+                              <div className="pointer-events-none absolute bottom-[calc(100%-var(--bar-height))] mb-2 hidden -translate-y-2 rounded-lg border border-white/10 bg-[#100b1d] px-2 py-1 text-xs font-semibold text-white shadow-xl group-hover/bar:block">
+                                {formatCurrency(value)}
+                              </div>
+
+                              {/* Bar */}
+
+                              <div
+                                className="w-full max-w-[34px] origin-bottom rounded-t-xl bg-gradient-to-t from-purple-800 via-purple-600 to-fuchsia-400 shadow-lg shadow-purple-900/20 transition-all duration-700 ease-out hover:brightness-125"
+                                style={{
+                                  height: `${height}%`,
+                                  minHeight: "7px",
+                                  animation:
+                                    "growBar 0.8s ease-out both",
+                                  animationDelay: `${index * 35}ms`,
+                                }}
+                              />
+
                             </div>
 
+                            <span className="mt-2 whitespace-nowrap text-[9px] text-gray-600 sm:text-[10px]">
+                              {item.date
+                                ? new Date(
+                                    item.date
+                                  ).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                    }
+                                  )
+                                : `D${index + 1}`}
+                            </span>
+
                           </div>
+                        );
+                      })}
 
-                          <span className="text-[10px] text-gray-600 mt-2 whitespace-nowrap">
-                            {item.date
-                              ? new Date(item.date).toLocaleDateString(
-                                  "en-US",
-                                  {
-                                    month: "short",
-                                    day: "numeric",
-                                  }
-                                )
-                              : `D${index + 1}`}
-                          </span>
-
-                        </div>
-                      );
-                    })}
+                    </div>
 
                   </div>
                 )}
 
-              </section>
+              </div>
 
-              {/* PAYMENT METHODS */}
+              {/* PAYMENT */}
 
-              <section className="rounded-3xl border border-white/10 bg-white/[0.035] backdrop-blur-xl p-5 sm:p-6">
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-5 backdrop-blur-xl sm:p-6">
 
-                <div className="flex items-center justify-between mb-7">
+                <Glow />
+
+                <div className="relative mb-7 flex items-start justify-between">
+
                   <div>
-                    <h2 className="text-xl font-bold">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-400/70">
+                      Payments
+                    </p>
+
+                    <h2 className="mt-1 text-xl font-black">
                       Payment Methods
                     </h2>
-
-                    <p className="text-sm text-gray-500 mt-1">
-                      Payment distribution
-                    </p>
                   </div>
 
                   <div className="text-2xl">
                     💳
                   </div>
+
                 </div>
 
                 {paymentMethods.length === 0 ? (
                   <EmptyState text="No payment data available." />
                 ) : (
-                  <div className="space-y-5">
+                  <div className="space-y-6">
+
                     {paymentMethods.map((item, index) => {
 
                       const value = Number(
@@ -447,63 +583,97 @@ const AdminAnalytics = () => {
                         "Unknown";
 
                       return (
-                        <div key={item._id || index}>
+                        <div
+                          key={item._id || index}
+                          className="group"
+                        >
 
-                          <div className="flex justify-between mb-2">
-                            <span className="text-sm text-gray-300 capitalize">
-                              {name}
-                            </span>
+                          <div className="mb-2 flex items-center justify-between">
 
-                            <span className="text-sm text-gray-400">
+                            <div className="flex items-center gap-3">
+
+                              <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-sm">
+                                {name
+                                  .toLowerCase()
+                                  .includes("card")
+                                  ? "💳"
+                                  : name
+                                      .toLowerCase()
+                                      .includes("cash")
+                                  ? "💵"
+                                  : "💰"}
+                              </div>
+
+                              <span className="text-sm font-semibold capitalize text-gray-300">
+                                {name}
+                              </span>
+
+                            </div>
+
+                            <span className="text-sm font-bold text-purple-300">
                               {percentage}%
                             </span>
+
                           </div>
 
-                          <div className="h-2 rounded-full bg-white/10 overflow-hidden">
+                          <div className="h-2 overflow-hidden rounded-full bg-white/5">
+
                             <div
-                              className="h-full rounded-full bg-gradient-to-r from-purple-600 to-fuchsia-400 transition-all duration-700"
+                              className="h-full rounded-full bg-gradient-to-r from-purple-700 via-purple-500 to-fuchsia-400 transition-all duration-1000 ease-out"
                               style={{
                                 width: `${percentage}%`,
+                                animation:
+                                  "growWidth 1s ease-out",
                               }}
                             />
+
                           </div>
 
                         </div>
                       );
                     })}
+
                   </div>
                 )}
 
-              </section>
+              </div>
 
-            </div>
+            </section>
 
-            {/* =================================================
+            {/* =============================================
                 ORDER STATUS
-            ================================================= */}
+            ============================================= */}
 
-            <section className="rounded-3xl border border-white/10 bg-white/[0.035] backdrop-blur-xl p-5 sm:p-6 mb-6">
+            <section className="relative mb-6 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-5 backdrop-blur-xl sm:p-6">
 
-              <div className="flex items-center justify-between mb-7">
+              <Glow />
+
+              <div className="relative mb-7 flex items-center justify-between">
+
                 <div>
-                  <h2 className="text-xl font-bold">
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-purple-400/70">
+                    Orders
+                  </p>
+
+                  <h2 className="mt-1 text-2xl font-black">
                     Order Status
                   </h2>
 
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="mt-1 text-sm text-gray-600">
                     Current order distribution
                   </p>
                 </div>
 
-                <div className="text-2xl">
+                <div className="text-3xl">
                   📦
                 </div>
+
               </div>
 
               {orderStatuses.length === 0 ? (
                 <EmptyState text="No order status data available." />
               ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                <div className="relative grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
 
                   {orderStatuses.map((item, index) => {
 
@@ -522,15 +692,34 @@ const AdminAnalytics = () => {
                     return (
                       <div
                         key={item._id || index}
-                        className="rounded-2xl border border-white/10 bg-black/20 p-4 hover:bg-white/5 transition"
+                        className="group rounded-2xl border border-white/10 bg-black/20 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/30 hover:bg-purple-500/5"
+                        style={{
+                          animation:
+                            "fadeUp 0.5s ease-out both",
+                          animationDelay: `${index * 70}ms`,
+                        }}
                       >
-                        <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">
+
+                        <div className="mb-4 flex items-center justify-between">
+
+                          <span className="text-xl">
+                            {getStatusIcon(status)}
+                          </span>
+
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-gray-700">
+                            #{index + 1}
+                          </span>
+
+                        </div>
+
+                        <p className="truncate text-xs font-bold uppercase tracking-wider text-gray-500">
                           {status}
                         </p>
 
-                        <p className="text-2xl font-black">
+                        <p className="mt-1 text-2xl font-black">
                           {formatNumber(count)}
                         </p>
+
                       </div>
                     );
                   })}
@@ -540,30 +729,34 @@ const AdminAnalytics = () => {
 
             </section>
 
-            {/* =================================================
-                TOP PRODUCTS + TOP SELLERS
-            ================================================= */}
+            {/* =============================================
+                TOP PRODUCTS + SELLERS
+            ============================================= */}
 
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
 
               {/* TOP PRODUCTS */}
 
-              <section className="rounded-3xl border border-white/10 bg-white/[0.035] backdrop-blur-xl p-5 sm:p-6">
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-5 backdrop-blur-xl sm:p-6">
 
-                <div className="flex items-center justify-between mb-6">
+                <Glow />
+
+                <div className="relative mb-7 flex items-center justify-between">
+
                   <div>
-                    <h2 className="text-xl font-bold">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-purple-400/70">
+                      Products
+                    </p>
+
+                    <h2 className="mt-1 text-2xl font-black">
                       Top Products
                     </h2>
-
-                    <p className="text-sm text-gray-500 mt-1">
-                      Best performing products
-                    </p>
                   </div>
 
-                  <span className="text-2xl">
+                  <span className="text-3xl">
                     🏆
                   </span>
+
                 </div>
 
                 {topProducts.length === 0 ? (
@@ -571,91 +764,92 @@ const AdminAnalytics = () => {
                 ) : (
                   <div className="space-y-4">
 
-                    {topProducts.slice(0, 5).map((item, index) => {
+                    {topProducts.slice(0, 5).map(
+                      (item, index) => {
 
-                      const value = Number(
-                        item.sales ??
-                          item.revenue ??
-                          item.total ??
-                          item.amount ??
-                          0
-                      );
+                        const value =
+                          getSaleValue(item);
 
-                      const name =
-                        item.name ||
-                        item.productName ||
-                        item.product?.name ||
-                        "Unknown Product";
+                        const name =
+                          item.name ||
+                          item.productName ||
+                          item.product?.name ||
+                          "Unknown Product";
 
-                      const percent =
-                        (value / maxProductValue) * 100;
+                        const percent =
+                          (value /
+                            maxProductValue) *
+                          100;
 
-                      return (
-                        <div
-                          key={item._id || index}
-                          className="group"
-                        >
+                        return (
+                          <div
+                            key={item._id || index}
+                            className="group flex items-center gap-4 rounded-2xl border border-transparent p-2 transition-all duration-300 hover:border-white/10 hover:bg-white/5"
+                          >
 
-                          <div className="flex items-center gap-4">
-
-                            <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-sm font-bold text-purple-300">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-purple-500/20 bg-purple-500/10 font-black text-purple-300">
                               {index + 1}
                             </div>
 
-                            <div className="flex-1 min-w-0">
+                            <div className="min-w-0 flex-1">
 
-                              <div className="flex justify-between gap-3 mb-2">
+                              <div className="mb-2 flex items-center justify-between gap-3">
 
-                                <p className="truncate text-sm font-semibold text-gray-200">
+                                <p className="truncate text-sm font-bold text-gray-300">
                                   {name}
                                 </p>
 
-                                <span className="text-sm text-purple-300 whitespace-nowrap">
+                                <span className="whitespace-nowrap text-sm font-black text-purple-300">
                                   {formatCurrency(value)}
                                 </span>
 
                               </div>
 
-                              <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                              <div className="h-1.5 overflow-hidden rounded-full bg-white/5">
+
                                 <div
-                                  className="h-full bg-gradient-to-r from-purple-600 to-fuchsia-400 rounded-full transition-all duration-700"
+                                  className="h-full rounded-full bg-gradient-to-r from-purple-700 to-fuchsia-400 transition-all duration-1000"
                                   style={{
                                     width: `${percent}%`,
                                   }}
                                 />
+
                               </div>
 
                             </div>
 
                           </div>
-
-                        </div>
-                      );
-                    })}
+                        );
+                      }
+                    )}
 
                   </div>
                 )}
 
-              </section>
+              </div>
 
               {/* TOP SELLERS */}
 
-              <section className="rounded-3xl border border-white/10 bg-white/[0.035] backdrop-blur-xl p-5 sm:p-6">
+              <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-5 backdrop-blur-xl sm:p-6">
 
-                <div className="flex items-center justify-between mb-6">
+                <Glow />
+
+                <div className="relative mb-7 flex items-center justify-between">
+
                   <div>
-                    <h2 className="text-xl font-bold">
+                    <p className="text-xs font-bold uppercase tracking-[0.2em] text-fuchsia-400/70">
+                      Sellers
+                    </p>
+
+                    <h2 className="mt-1 text-2xl font-black">
                       Top Sellers
                     </h2>
-
-                    <p className="text-sm text-gray-500 mt-1">
-                      Highest performing sellers
-                    </p>
                   </div>
 
-                  <span className="text-2xl">
+                  <span className="text-3xl">
                     🏪
                   </span>
+
                 </div>
 
                 {topSellers.length === 0 ? (
@@ -663,136 +857,292 @@ const AdminAnalytics = () => {
                 ) : (
                   <div className="space-y-3">
 
-                    {topSellers.slice(0, 5).map((item, index) => {
+                    {topSellers.slice(0, 5).map(
+                      (item, index) => {
 
-                      const sellerName =
-                        item.name ||
-                        item.sellerName ||
-                        item.seller?.name ||
-                        "Unknown Seller";
+                        const sellerName =
+                          item.name ||
+                          item.sellerName ||
+                          item.seller?.name ||
+                          "Unknown Seller";
 
-                      const revenue = Number(
-                        item.sales ??
-                          item.revenue ??
-                          item.total ??
-                          item.amount ??
-                          0
-                      );
+                        const revenue =
+                          getSaleValue(item);
 
-                      return (
-                        <div
-                          key={item._id || index}
-                          className="flex items-center gap-4 rounded-2xl border border-white/5 bg-black/20 p-4 hover:bg-white/5 transition"
-                        >
+                        return (
+                          <div
+                            key={item._id || index}
+                            className="group flex items-center gap-4 rounded-2xl border border-white/5 bg-black/20 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-purple-500/20 hover:bg-white/5"
+                          >
 
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-600 to-fuchsia-500 flex items-center justify-center font-bold">
-                            {sellerName
-                              .charAt(0)
-                              .toUpperCase()}
+                            <div className="relative">
+
+                              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-purple-700 to-fuchsia-500 font-black shadow-lg shadow-purple-900/20">
+                                {sellerName
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </div>
+
+                              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full border border-[#06030d] bg-purple-600 text-[9px] font-black">
+                                {index + 1}
+                              </span>
+
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+
+                              <p className="truncate font-bold text-gray-200">
+                                {sellerName}
+                              </p>
+
+                              <p className="mt-1 text-xs text-gray-600">
+                                Top performing seller
+                              </p>
+
+                            </div>
+
+                            <div className="text-right">
+
+                              <p className="text-sm font-black text-purple-300">
+                                {formatCurrency(revenue)}
+                              </p>
+
+                              <p className="mt-1 text-[10px] uppercase tracking-wider text-gray-700">
+                                Revenue
+                              </p>
+
+                            </div>
+
                           </div>
-
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold truncate">
-                              {sellerName}
-                            </p>
-
-                            <p className="text-xs text-gray-500 mt-1">
-                              Seller #{index + 1}
-                            </p>
-                          </div>
-
-                          <div className="text-right">
-                            <p className="text-sm font-bold text-purple-300">
-                              {formatCurrency(revenue)}
-                            </p>
-
-                            <p className="text-xs text-gray-600">
-                              Revenue
-                            </p>
-                          </div>
-
-                        </div>
-                      );
-                    })}
+                        );
+                      }
+                    )}
 
                   </div>
                 )}
 
-              </section>
+              </div>
 
-            </div>
+            </section>
 
           </>
         )}
+
       </div>
-    </div>
+
+      {/* ===================================================
+          ANIMATIONS
+      =================================================== */}
+
+      <style>{`
+        @keyframes fadeUp {
+          from {
+            opacity: 0;
+            transform: translateY(16px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes growBar {
+          from {
+            transform: scaleY(0);
+            opacity: 0;
+          }
+          to {
+            transform: scaleY(1);
+            opacity: 1;
+          }
+        }
+
+        @keyframes growWidth {
+          from {
+            width: 0;
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
+
+    </main>
   );
 };
 
-/* =============================================================
-   STAT CARD
-============================================================= */
+/* =========================================================
+   METRIC CARD
+========================================================= */
 
-const StatCard = ({
+const MetricCard = ({
   icon,
-  title,
+  label,
   value,
   subtitle,
+  accent,
+  delay,
 }) => {
   return (
-    <div className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] backdrop-blur-xl p-5 transition-all duration-300 hover:-translate-y-1 hover:border-purple-500/30 hover:bg-white/[0.055]">
+    <div
+      className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] p-5 backdrop-blur-xl transition-all duration-500 hover:-translate-y-1 hover:border-purple-500/30 hover:bg-white/[0.055] sm:p-6"
+      style={{
+        animation: "fadeUp 0.6s ease-out both",
+        animationDelay: delay,
+      }}
+    >
 
-      <div className="absolute -right-10 -top-10 w-28 h-28 rounded-full bg-purple-600/10 blur-2xl group-hover:bg-purple-500/20 transition" />
+      <div className="pointer-events-none absolute -right-16 -top-16 h-40 w-40 rounded-full bg-purple-600/10 blur-3xl transition duration-500 group-hover:bg-purple-500/20" />
 
       <div className="relative">
 
-        <div className="flex items-center justify-between mb-5">
+        <div className="mb-6 flex items-center justify-between">
 
-          <div className="w-11 h-11 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-xl">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-purple-500/20 bg-purple-500/10 text-2xl transition duration-500 group-hover:scale-110 group-hover:rotate-3">
             {icon}
           </div>
 
-          <span className="text-xs text-gray-600">
-            AmitShop
+          <span className="rounded-full border border-white/5 bg-white/5 px-2.5 py-1 text-[9px] font-bold uppercase tracking-widest text-gray-600">
+            {accent}
           </span>
 
         </div>
 
-        <p className="text-sm text-gray-500">
-          {title}
+        <p className="text-sm font-semibold text-gray-500">
+          {label}
         </p>
 
-        <p className="text-2xl sm:text-3xl font-black mt-1 tracking-tight">
+        <p className="mt-1 text-3xl font-black tracking-tight sm:text-4xl">
           {value}
         </p>
 
-        <p className="text-xs text-gray-600 mt-2">
-          {subtitle}
-        </p>
+        <div className="mt-4 flex items-center gap-2">
+
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-500/10 text-xs text-green-400">
+            ↑
+          </span>
+
+          <span className="text-xs text-gray-600">
+            {subtitle}
+          </span>
+
+        </div>
 
       </div>
     </div>
   );
 };
 
-/* =============================================================
+/* =========================================================
+   GLOW
+========================================================= */
+
+const Glow = () => {
+  return (
+    <div className="pointer-events-none absolute -right-20 -top-20 h-48 w-48 rounded-full bg-purple-600/5 blur-3xl" />
+  );
+};
+
+/* =========================================================
    EMPTY STATE
-============================================================= */
+========================================================= */
 
 const EmptyState = ({ text }) => {
   return (
-    <div className="h-40 flex items-center justify-center text-center">
+    <div className="flex h-44 items-center justify-center text-center">
+
       <div>
-        <div className="text-3xl mb-2 opacity-50">
+
+        <div className="mb-3 text-4xl opacity-30">
           📊
         </div>
 
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-gray-600">
           {text}
         </p>
+
       </div>
+
     </div>
+  );
+};
+
+/* =========================================================
+   SKELETON
+========================================================= */
+
+const AnalyticsSkeleton = () => {
+  return (
+    <div className="space-y-6">
+
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+
+        {[1, 2, 3, 4].map((item) => (
+          <div
+            key={item}
+            className="h-44 animate-pulse rounded-3xl border border-white/10 bg-white/[0.035]"
+          />
+        ))}
+
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+
+        <div className="h-[430px] animate-pulse rounded-3xl border border-white/10 bg-white/[0.035] xl:col-span-2" />
+
+        <div className="h-[430px] animate-pulse rounded-3xl border border-white/10 bg-white/[0.035]" />
+
+      </div>
+
+      <div className="h-56 animate-pulse rounded-3xl border border-white/10 bg-white/[0.035]" />
+
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+
+        <div className="h-80 animate-pulse rounded-3xl border border-white/10 bg-white/[0.035]" />
+
+        <div className="h-80 animate-pulse rounded-3xl border border-white/10 bg-white/[0.035]" />
+
+      </div>
+
+    </div>
+  );
+};
+
+/* =========================================================
+   STATUS ICON
+========================================================= */
+
+const getStatusIcon = (status) => {
+  const value = String(status).toLowerCase();
+
+  if (value.includes("pending")) return "⏳";
+  if (value.includes("processing")) return "⚙️";
+  if (value.includes("confirmed")) return "✅";
+  if (value.includes("shipped")) return "🚚";
+  if (value.includes("delivered")) return "📦";
+  if (value.includes("cancel")) return "❌";
+  if (value.includes("refund")) return "↩️";
+
+  return "📋";
+};
+
+/* =========================================================
+   CENTER PAGE
+========================================================= */
+
+const PageCenter = ({ children }) => {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[#06030d] px-4 text-white">
+      {children}
+    </main>
   );
 };
 
 export default AdminAnalytics;
+
