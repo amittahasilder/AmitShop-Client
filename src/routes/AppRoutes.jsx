@@ -37,6 +37,7 @@ import AdminUsers from "../pages/Admin/AdminUsers";
 import AdminProducts from "../pages/Admin/AdminProducts";
 import AdminOrders from "../pages/Admin/AdminOrders";
 import AdminAnalytics from "../pages/Admin/AdminAnalytics";
+import AdminSettings from "../pages/Admin/AdminSettings";
 
 // =========================================================
 // CART
@@ -421,6 +422,16 @@ const AppRoutes = () => {
             element={<AdminAnalytics />}
           />
 
+          {/* =================================================
+              ADMIN SETTINGS
+              F24.5
+          ================================================= */}
+
+          <Route
+            path="/admin/settings"
+            element={<AdminSettings />}
+          />
+
         </Route>
 
         {/* =================================================
@@ -447,4 +458,3 @@ const AppRoutes = () => {
 };
 
 export default AppRoutes;
-
