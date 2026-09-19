@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Routes,
@@ -34,6 +35,8 @@ import SellerOrderDetails from "../pages/Seller/SellerOrderDetails";
 import AdminDashboard from "../pages/Admin/AdminDashboard";
 import AdminUsers from "../pages/Admin/AdminUsers";
 import AdminProducts from "../pages/Admin/AdminProducts";
+import AdminOrders from "../pages/Admin/AdminOrders";
+import AdminAnalytics from "../pages/Admin/AdminAnalytics";
 
 // =========================================================
 // CART
@@ -398,6 +401,26 @@ const AppRoutes = () => {
             element={<AdminProducts />}
           />
 
+          {/* =================================================
+              ADMIN ORDERS
+              F24.3
+          ================================================= */}
+
+          <Route
+            path="/admin/orders"
+            element={<AdminOrders />}
+          />
+
+          {/* =================================================
+              ADMIN ANALYTICS
+              F24.4
+          ================================================= */}
+
+          <Route
+            path="/admin/analytics"
+            element={<AdminAnalytics />}
+          />
+
         </Route>
 
         {/* =================================================
@@ -424,3 +447,4 @@ const AppRoutes = () => {
 };
 
 export default AppRoutes;
+
