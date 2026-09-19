@@ -33,6 +33,7 @@ import SellerOrderDetails from "../pages/Seller/SellerOrderDetails";
 
 import AdminDashboard from "../pages/Admin/AdminDashboard";
 import AdminUsers from "../pages/Admin/AdminUsers";
+import AdminProducts from "../pages/Admin/AdminProducts";
 
 // =========================================================
 // CART
@@ -385,6 +386,16 @@ const AppRoutes = () => {
           <Route
             path="/admin/users"
             element={<AdminUsers />}
+          />
+
+          {/* =================================================
+              ADMIN PRODUCTS
+              F24.2
+          ================================================= */}
+
+          <Route
+            path="/admin/products"
+            element={<AdminProducts />}
           />
 
         </Route>
