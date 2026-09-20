@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import api from "../../api/axios";
@@ -20,9 +21,17 @@ const ProductDetails = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
+  /* =========================================================
+     WISHLIST
+  ========================================================= */
+
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isAddingToWishlist, setIsAddingToWishlist] =
     useState(false);
+
+  /* =========================================================
+     CART
+  ========================================================= */
 
   const [isAddingToCart, setIsAddingToCart] =
     useState(false);
@@ -152,6 +161,8 @@ const ProductDetails = () => {
     const fetchMyReview = async () => {
       if (!id || !isAuthenticated || !accessToken) {
         setMyReview(null);
+        setReviewRating(5);
+        setReviewComment("");
         return;
       }
 
@@ -169,6 +180,9 @@ const ProductDetails = () => {
           if (review) {
             setReviewRating(review.rating);
             setReviewComment(review.comment);
+          } else {
+            setReviewRating(5);
+            setReviewComment("");
           }
         }
       } catch (error) {
@@ -179,6 +193,8 @@ const ProductDetails = () => {
         );
 
         setMyReview(null);
+        setReviewRating(5);
+        setReviewComment("");
       }
     };
 
@@ -195,6 +211,7 @@ const ProductDetails = () => {
         const response = await api.get("/wishlist");
 
         if (!response.data.success) {
+          setIsWishlisted(false);
           return;
         }
 
@@ -205,6 +222,7 @@ const ProductDetails = () => {
           [];
 
         if (!Array.isArray(wishlistItems)) {
+          setIsWishlisted(false);
           return;
         }
 
@@ -227,13 +245,82 @@ const ProductDetails = () => {
           error.response?.data?.message ||
             error.message
         );
+
+        setIsWishlisted(false);
       }
     };
 
-    if (id) {
+    if (id && isAuthenticated && accessToken) {
       checkWishlistStatus();
+    } else {
+      setIsWishlisted(false);
     }
-  }, [id]);
+  }, [id, isAuthenticated, accessToken]);
+
+  /* =========================================================
+     SYNC WISHLIST CHANGES
+  ========================================================= */
+
+  useEffect(() => {
+    const handleWishlistUpdated = async () => {
+      if (!id || !isAuthenticated || !accessToken) {
+        setIsWishlisted(false);
+        return;
+      }
+
+      try {
+        const response = await api.get("/wishlist");
+
+        if (!response.data.success) {
+          setIsWishlisted(false);
+          return;
+        }
+
+        const wishlistItems =
+          response.data.wishlist?.items ||
+          response.data.data?.items ||
+          response.data.items ||
+          [];
+
+        if (!Array.isArray(wishlistItems)) {
+          setIsWishlisted(false);
+          return;
+        }
+
+        const alreadyWishlisted =
+          wishlistItems.some((item) => {
+            const wishlistProduct =
+              item?.product || item;
+
+            const productId =
+              wishlistProduct?._id ||
+              wishlistProduct?.id;
+
+            return String(productId) === String(id);
+          });
+
+        setIsWishlisted(alreadyWishlisted);
+      } catch (error) {
+        console.log(
+          "Wishlist Sync Error:",
+          error.response?.data?.message ||
+            error.message
+        );
+      }
+    };
+
+    window.addEventListener(
+      "amitshop:wishlist-updated",
+      handleWishlistUpdated
+    );
+
+    return () => {
+      window.removeEventListener(
+        "amitshop:wishlist-updated",
+        handleWishlistUpdated
+      );
+    };
+  }, [id, isAuthenticated, accessToken]);
 
   /* =========================================================
      IMAGE
@@ -324,6 +411,11 @@ const ProductDetails = () => {
   ========================================================= */
 
   const handleWishlistToggle = async () => {
+    if (!isAuthenticated || !accessToken) {
+      navigate("/login");
+      return;
+    }
+
     try {
       setIsAddingToWishlist(true);
 
@@ -812,33 +904,30 @@ const ProductDetails = () => {
 
             {images.length > 1 && (
               <div className="mt-4 grid grid-cols-4 gap-3 sm:grid-cols-5">
-                {images.map(
-                  (image, index) => (
-                    <button
-                      key={`${image}-${index}`}
-                      type="button"
-                      onClick={() =>
-                        setSelectedImage(index)
-                      }
-                      className={`relative h-20 overflow-hidden rounded-2xl border transition-all duration-300 sm:h-24 ${
-                        selectedImage === index
-                          ? "border-violet-400/50 ring-2 ring-violet-500/10"
-                          : "border-white/[0.08] hover:border-white/20"
-                      }`}
-                    >
-                      <img
-                        src={image}
-                        alt={`${product.name} ${index + 1}`}
-                        className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
-                      />
+                {images.map((image, index) => (
+                  <button
+                    key={`${image}-${index}`}
+                    type="button"
+                    onClick={() =>
+                      setSelectedImage(index)
+                    }
+                    className={`relative h-20 overflow-hidden rounded-2xl border transition-all duration-300 sm:h-24 ${
+                      selectedImage === index
+                        ? "border-violet-400/50 ring-2 ring-violet-500/10"
+                        : "border-white/[0.08] hover:border-white/20"
+                    }`}
+                  >
+                    <img
+                      src={image}
+                      alt={`${product.name} ${index + 1}`}
+                      className="h-full w-full object-cover transition-transform duration-500 hover:scale-110"
+                    />
 
-                      {selectedImage ===
-                        index && (
-                        <div className="absolute inset-0 bg-violet-500/10" />
-                      )}
-                    </button>
-                  )
-                )}
+                    {selectedImage === index && (
+                      <div className="absolute inset-0 bg-violet-500/10" />
+                    )}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -866,9 +955,7 @@ const ProductDetails = () => {
               </p>
             )}
 
-            {/* =================================================
-                REAL RATING
-            ================================================= */}
+            {/* REAL RATING */}
 
             <div className="mt-5 flex flex-wrap items-center gap-3">
               {renderStars(
@@ -1476,3 +1563,4 @@ const ProductDetails = () => {
 };
 
 export default ProductDetails;
+
