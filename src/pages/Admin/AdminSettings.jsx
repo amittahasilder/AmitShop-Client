@@ -1,27 +1,210 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+
+import api from "../../api/axios";
 import useAuthStore from "../../store/authStore";
 
-const AdminSettings = () => {
-  const { user, isAuthenticated } = useAuthStore();
+// =============================================================
+// DEFAULT SETTINGS
+// =============================================================
 
-  const [settings, setSettings] = useState({
-    storeName: "AmitShop",
-    storeEmail: "amitshop.test@gmail.com",
-    storePhone: "",
-    currency: "USD",
-    taxRate: 0,
-    freeShipping: false,
-    lowStockAlert: true,
-    emailNotifications: true,
-    orderNotifications: true,
-    maintenanceMode: false,
-    allowReviews: true,
-    autoApproveProducts: false,
-  });
+const DEFAULT_SETTINGS = {
+  storeName: "AmitShop",
+  storeEmail: "amitshop.test@gmail.com",
+  storePhone: "",
+  currency: "USD",
+  taxRate: 0,
+  freeShipping: false,
+  lowStockAlert: true,
+  emailNotifications: true,
+  orderNotifications: true,
+  maintenanceMode: false,
+  allowReviews: true,
+  autoApproveProducts: false,
+};
+
+// =============================================================
+// ADMIN SETTINGS
+// =============================================================
+
+const AdminSettings = () => {
+  const {
+    user,
+    accessToken,
+    isAuthenticated,
+  } = useAuthStore();
+
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
   const [saved, setSaved] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  // =========================================================
+  // LOAD SETTINGS FROM BACKEND
+  // =========================================================
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (!isAuthenticated || user?.role !== "admin" || !accessToken) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await api.get("/admin/settings", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (response.data?.settings) {
+          setSettings({
+            ...DEFAULT_SETTINGS,
+            ...response.data.settings,
+          });
+        }
+      } catch (err) {
+        console.error("Fetch Admin Settings Error:", err);
+
+        setError(
+          err.response?.data?.message ||
+            "Failed to load admin settings"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSettings();
+  }, [isAuthenticated, user?.role, accessToken]);
+
+  // =========================================================
+  // INPUT HANDLER
+  // =========================================================
+
+  const handleChange = (e) => {
+    const {
+      name,
+      value,
+      type,
+      checked,
+    } = e.target;
+
+    setSettings((prev) => ({
+      ...prev,
+      [name]:
+        type === "checkbox"
+          ? checked
+          : value,
+    }));
+
+    setSaved(false);
+    setError("");
+  };
+
+  // =========================================================
+  // SAVE SETTINGS TO BACKEND
+  // =========================================================
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      setSaved(false);
+      setError("");
+
+      const payload = {
+        ...settings,
+        taxRate: Number(settings.taxRate),
+      };
+
+      const response = await api.put(
+        "/admin/settings",
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (response.data?.settings) {
+        setSettings({
+          ...DEFAULT_SETTINGS,
+          ...response.data.settings,
+        });
+      }
+
+      setSaved(true);
+
+      setTimeout(() => {
+        setSaved(false);
+      }, 3000);
+    } catch (err) {
+      console.error("Update Admin Settings Error:", err);
+
+      setError(
+        err.response?.data?.message ||
+          "Failed to save admin settings"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // =========================================================
+  // RESET SETTINGS
+  // =========================================================
+
+  const handleReset = async () => {
+    try {
+      setSaving(true);
+      setSaved(false);
+      setError("");
+
+      const response = await api.put(
+        "/admin/settings",
+        {
+          ...DEFAULT_SETTINGS,
+          taxRate: Number(DEFAULT_SETTINGS.taxRate),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (response.data?.settings) {
+        setSettings({
+          ...DEFAULT_SETTINGS,
+          ...response.data.settings,
+        });
+      } else {
+        setSettings(DEFAULT_SETTINGS);
+      }
+
+      setSaved(true);
+
+      setTimeout(() => {
+        setSaved(false);
+      }, 3000);
+    } catch (err) {
+      console.error("Reset Admin Settings Error:", err);
+
+      setError(
+        err.response?.data?.message ||
+          "Failed to reset admin settings"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // =========================================================
   // AUTH CHECK
@@ -31,7 +214,9 @@ const AdminSettings = () => {
     return (
       <PageCenter>
         <div className="text-center">
-          <div className="text-5xl mb-5">🔐</div>
+          <div className="text-5xl mb-5">
+            🔐
+          </div>
 
           <h1 className="text-2xl font-bold text-white">
             Authentication Required
@@ -45,11 +230,17 @@ const AdminSettings = () => {
     );
   }
 
+  // =========================================================
+  // ROLE CHECK
+  // =========================================================
+
   if (user?.role !== "admin") {
     return (
       <PageCenter>
         <div className="text-center">
-          <div className="text-5xl mb-5">🚫</div>
+          <div className="text-5xl mb-5">
+            🚫
+          </div>
 
           <h1 className="text-2xl font-bold text-white">
             Access Denied
@@ -73,94 +264,30 @@ const AdminSettings = () => {
   }
 
   // =========================================================
-  // LOAD LOCAL SETTINGS
+  // LOADING
   // =========================================================
 
-  useEffect(() => {
-    const storedSettings = localStorage.getItem("amitshop_admin_settings");
+  if (loading) {
+    return (
+      <PageCenter>
+        <div className="text-center">
+          <div className="w-12 h-12 mx-auto rounded-full border-4 border-purple-500/20 border-t-purple-500 animate-spin" />
 
-    if (storedSettings) {
-      try {
-        setSettings(JSON.parse(storedSettings));
-      } catch (error) {
-        console.error("Failed to load settings:", error);
-      }
-    }
-  }, []);
-
-  // =========================================================
-  // INPUT HANDLER
-  // =========================================================
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-
-    setSettings((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-
-    setSaved(false);
-  };
-
-  // =========================================================
-  // SAVE SETTINGS
-  // =========================================================
-
-  const handleSave = () => {
-    setSaving(true);
-    setSaved(false);
-
-    setTimeout(() => {
-      localStorage.setItem(
-        "amitshop_admin_settings",
-        JSON.stringify(settings)
-      );
-
-      setSaving(false);
-      setSaved(true);
-
-      setTimeout(() => {
-        setSaved(false);
-      }, 3000);
-    }, 700);
-  };
-
-  // =========================================================
-  // RESET SETTINGS
-  // =========================================================
-
-  const handleReset = () => {
-    const defaultSettings = {
-      storeName: "AmitShop",
-      storeEmail: "amitshop.test@gmail.com",
-      storePhone: "",
-      currency: "USD",
-      taxRate: 0,
-      freeShipping: false,
-      lowStockAlert: true,
-      emailNotifications: true,
-      orderNotifications: true,
-      maintenanceMode: false,
-      allowReviews: true,
-      autoApproveProducts: false,
-    };
-
-    setSettings(defaultSettings);
-    localStorage.setItem(
-      "amitshop_admin_settings",
-      JSON.stringify(defaultSettings)
+          <p className="text-gray-400 mt-5">
+            Loading admin settings...
+          </p>
+        </div>
+      </PageCenter>
     );
+  }
 
-    setSaved(true);
-
-    setTimeout(() => {
-      setSaved(false);
-    }, 3000);
-  };
+  // =========================================================
+  // UI
+  // =========================================================
 
   return (
     <div className="min-h-screen bg-[#070511] text-white pt-28 pb-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+
       {/* =====================================================
           BACKGROUND EFFECTS
       ===================================================== */}
@@ -174,37 +301,51 @@ const AdminSettings = () => {
       </div>
 
       <div className="relative max-w-7xl mx-auto">
+
         {/* =====================================================
             HEADER
         ===================================================== */}
 
         <div className="mb-8">
+
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+
             <div>
+
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-500/10 border border-purple-400/20 text-purple-300 text-xs font-semibold mb-4">
+
                 <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+
                 ADMIN CONTROL CENTER
+
               </div>
 
               <h1 className="text-4xl sm:text-5xl font-black tracking-tight">
+
                 Store{" "}
+
                 <span className="bg-gradient-to-r from-purple-400 via-fuchsia-400 to-indigo-400 bg-clip-text text-transparent">
                   Settings
                 </span>
+
               </h1>
 
               <p className="text-gray-400 mt-3 max-w-2xl">
                 Manage AmitShop store configuration, orders,
                 notifications, products and system preferences.
               </p>
+
             </div>
 
             <div className="flex items-center gap-3">
+
               <button
                 onClick={handleReset}
+                disabled={saving}
                 className="px-5 py-3 rounded-xl border border-white/10
                 bg-white/5 hover:bg-white/10 text-gray-300
-                hover:text-white transition-all duration-300"
+                hover:text-white disabled:opacity-50
+                transition-all duration-300"
               >
                 Reset
               </button>
@@ -219,18 +360,28 @@ const AdminSettings = () => {
                 shadow-lg shadow-purple-900/30
                 font-semibold transition-all duration-300"
               >
-                {saving ? "Saving..." : "Save Changes"}
+                {saving
+                  ? "Saving..."
+                  : "Save Changes"}
               </button>
+
             </div>
+
           </div>
 
-          {/* SUCCESS MESSAGE */}
+          {/* =================================================
+              SUCCESS MESSAGE
+          ================================================= */}
 
           {saved && (
             <div className="mt-5 px-5 py-4 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 text-emerald-300 flex items-center gap-3 animate-[fadeUp_.35s_ease-out]">
-              <span className="text-xl">✓</span>
+
+              <span className="text-xl">
+                ✓
+              </span>
 
               <div>
+
                 <p className="font-semibold">
                   Settings saved successfully
                 </p>
@@ -238,9 +389,38 @@ const AdminSettings = () => {
                 <p className="text-sm text-emerald-400/70">
                   Your AmitShop preferences have been updated.
                 </p>
+
               </div>
+
             </div>
           )}
+
+          {/* =================================================
+              ERROR MESSAGE
+          ================================================= */}
+
+          {error && (
+            <div className="mt-5 px-5 py-4 rounded-2xl border border-red-400/20 bg-red-500/10 text-red-300 flex items-center gap-3">
+
+              <span className="text-xl">
+                ⚠️
+              </span>
+
+              <div>
+
+                <p className="font-semibold">
+                  Something went wrong
+                </p>
+
+                <p className="text-sm text-red-400/80">
+                  {error}
+                </p>
+
+              </div>
+
+            </div>
+          )}
+
         </div>
 
         {/* =====================================================
@@ -248,6 +428,7 @@ const AdminSettings = () => {
         ===================================================== */}
 
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
           {/* ===================================================
               STORE INFORMATION
           =================================================== */}
@@ -257,6 +438,7 @@ const AdminSettings = () => {
             title="Store Information"
             description="Basic information about your online store."
           >
+
             <InputField
               label="Store Name"
               name="storeName"
@@ -281,6 +463,7 @@ const AdminSettings = () => {
               onChange={handleChange}
               placeholder="+880 1XXXXXXXXX"
             />
+
           </SettingsCard>
 
           {/* ===================================================
@@ -292,16 +475,29 @@ const AdminSettings = () => {
             title="Payment & Tax"
             description="Configure currency and store tax preferences."
           >
+
             <SelectField
               label="Currency"
               name="currency"
               value={settings.currency}
               onChange={handleChange}
               options={[
-                { value: "USD", label: "USD — US Dollar" },
-                { value: "BDT", label: "BDT — Bangladeshi Taka" },
-                { value: "EUR", label: "EUR — Euro" },
-                { value: "GBP", label: "GBP — British Pound" },
+                {
+                  value: "USD",
+                  label: "USD — US Dollar",
+                },
+                {
+                  value: "BDT",
+                  label: "BDT — Bangladeshi Taka",
+                },
+                {
+                  value: "EUR",
+                  label: "EUR — Euro",
+                },
+                {
+                  value: "GBP",
+                  label: "GBP — British Pound",
+                },
               ]}
             />
 
@@ -315,6 +511,7 @@ const AdminSettings = () => {
               onChange={handleChange}
               placeholder="0"
             />
+
           </SettingsCard>
 
           {/* ===================================================
@@ -326,6 +523,7 @@ const AdminSettings = () => {
             title="Order Settings"
             description="Control order and shipping behaviour."
           >
+
             <Toggle
               label="Free Shipping"
               description="Enable free shipping for all orders."
@@ -349,6 +547,7 @@ const AdminSettings = () => {
               checked={settings.orderNotifications}
               onChange={handleChange}
             />
+
           </SettingsCard>
 
           {/* ===================================================
@@ -360,6 +559,7 @@ const AdminSettings = () => {
             title="Product Settings"
             description="Manage product review and approval behaviour."
           >
+
             <Toggle
               label="Allow Reviews"
               description="Allow customers to review products."
@@ -375,6 +575,7 @@ const AdminSettings = () => {
               checked={settings.autoApproveProducts}
               onChange={handleChange}
             />
+
           </SettingsCard>
 
           {/* ===================================================
@@ -386,6 +587,7 @@ const AdminSettings = () => {
             title="Notifications"
             description="Control store notification preferences."
           >
+
             <Toggle
               label="Email Notifications"
               description="Enable store email notifications."
@@ -401,6 +603,7 @@ const AdminSettings = () => {
               checked={settings.orderNotifications}
               onChange={handleChange}
             />
+
           </SettingsCard>
 
           {/* ===================================================
@@ -412,6 +615,7 @@ const AdminSettings = () => {
             title="System"
             description="Important system-level controls."
           >
+
             <Toggle
               label="Maintenance Mode"
               description="Temporarily disable customer access to the store."
@@ -422,10 +626,15 @@ const AdminSettings = () => {
             />
 
             <div className="mt-5 p-4 rounded-xl bg-yellow-500/5 border border-yellow-400/10">
+
               <div className="flex gap-3">
-                <span className="text-xl">⚠️</span>
+
+                <span className="text-xl">
+                  ⚠️
+                </span>
 
                 <div>
+
                   <p className="text-sm font-semibold text-yellow-300">
                     Important
                   </p>
@@ -434,10 +643,15 @@ const AdminSettings = () => {
                     Maintenance mode should only be enabled when
                     performing major store updates or maintenance.
                   </p>
+
                 </div>
+
               </div>
+
             </div>
+
           </SettingsCard>
+
         </div>
 
         {/* =====================================================
@@ -445,9 +659,13 @@ const AdminSettings = () => {
         ===================================================== */}
 
         <div className="mt-8">
+
           <div className="rounded-3xl border border-white/10 bg-white/[0.035] backdrop-blur-xl p-6">
+
             <div className="flex items-center justify-between mb-5">
+
               <div>
+
                 <h2 className="text-xl font-bold">
                   Quick Admin Access
                 </h2>
@@ -455,12 +673,17 @@ const AdminSettings = () => {
                 <p className="text-sm text-gray-500 mt-1">
                   Jump directly to important admin modules.
                 </p>
+
               </div>
 
-              <span className="text-2xl">⚡</span>
+              <span className="text-2xl">
+                ⚡
+              </span>
+
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+
               <QuickLink
                 to="/admin/dashboard"
                 icon="📊"
@@ -484,9 +707,13 @@ const AdminSettings = () => {
                 icon="📦"
                 label="Orders"
               />
+
             </div>
+
           </div>
+
         </div>
+
       </div>
 
       {/* =======================================================
@@ -506,6 +733,7 @@ const AdminSettings = () => {
           }
         }
       `}</style>
+
     </div>
   );
 };
@@ -529,7 +757,9 @@ const SettingsCard = ({
       transition-all duration-500
       shadow-2xl shadow-black/20"
     >
+
       <div className="flex items-start gap-4 mb-6">
+
         <div
           className="w-12 h-12 rounded-2xl
           bg-gradient-to-br from-purple-600/20 to-fuchsia-600/10
@@ -542,6 +772,7 @@ const SettingsCard = ({
         </div>
 
         <div>
+
           <h2 className="text-lg font-bold text-white">
             {title}
           </h2>
@@ -549,12 +780,15 @@ const SettingsCard = ({
           <p className="text-sm text-gray-500 mt-1">
             {description}
           </p>
+
         </div>
+
       </div>
 
       <div className="space-y-5">
         {children}
       </div>
+
     </div>
   );
 };
@@ -575,6 +809,7 @@ const InputField = ({
 }) => {
   return (
     <div>
+
       <label className="block text-sm font-semibold text-gray-300 mb-2">
         {label}
       </label>
@@ -595,6 +830,7 @@ const InputField = ({
         focus:ring-2 focus:ring-purple-500/10
         transition-all duration-300"
       />
+
     </div>
   );
 };
@@ -612,6 +848,7 @@ const SelectField = ({
 }) => {
   return (
     <div>
+
       <label className="block text-sm font-semibold text-gray-300 mb-2">
         {label}
       </label>
@@ -626,6 +863,7 @@ const SelectField = ({
         focus:border-purple-500/60
         transition-all duration-300"
       >
+
         {options.map((option) => (
           <option
             key={option.value}
@@ -635,7 +873,9 @@ const SelectField = ({
             {option.label}
           </option>
         ))}
+
       </select>
+
     </div>
   );
 };
@@ -654,10 +894,14 @@ const Toggle = ({
 }) => {
   return (
     <label className="flex items-center justify-between gap-5 p-4 rounded-2xl bg-white/[0.025] border border-white/5 cursor-pointer hover:bg-white/[0.045] transition-all duration-300">
+
       <div>
+
         <p
           className={`text-sm font-semibold ${
-            danger ? "text-red-300" : "text-gray-200"
+            danger
+              ? "text-red-300"
+              : "text-gray-200"
           }`}
         >
           {label}
@@ -666,9 +910,11 @@ const Toggle = ({
         <p className="text-xs text-gray-500 mt-1">
           {description}
         </p>
+
       </div>
 
       <div className="relative shrink-0">
+
         <input
           type="checkbox"
           name={name}
@@ -681,7 +927,11 @@ const Toggle = ({
           className={`w-12 h-7 rounded-full
           bg-gray-700 peer-checked:bg-purple-600
           transition-all duration-300
-          ${danger ? "peer-checked:bg-red-600" : ""}`}
+          ${
+            danger
+              ? "peer-checked:bg-red-600"
+              : ""
+          }`}
         />
 
         <div
@@ -690,7 +940,9 @@ const Toggle = ({
           transition-transform duration-300
           peer-checked:translate-x-5"
         />
+
       </div>
+
     </label>
   );
 };
@@ -699,7 +951,11 @@ const Toggle = ({
 // QUICK LINK
 // =============================================================
 
-const QuickLink = ({ to, icon, label }) => {
+const QuickLink = ({
+  to,
+  icon,
+  label,
+}) => {
   return (
     <Link
       to={to}
@@ -709,6 +965,7 @@ const QuickLink = ({ to, icon, label }) => {
       hover:border-purple-400/20
       transition-all duration-300"
     >
+
       <span className="text-xl group-hover:scale-110 transition-transform duration-300">
         {icon}
       </span>
@@ -716,6 +973,7 @@ const QuickLink = ({ to, icon, label }) => {
       <span className="text-sm font-semibold text-gray-300 group-hover:text-white transition-colors">
         {label}
       </span>
+
     </Link>
   );
 };
@@ -724,7 +982,9 @@ const QuickLink = ({ to, icon, label }) => {
 // CENTER PAGE
 // =============================================================
 
-const PageCenter = ({ children }) => {
+const PageCenter = ({
+  children,
+}) => {
   return (
     <div className="min-h-screen bg-[#070511] flex items-center justify-center px-6">
       {children}
