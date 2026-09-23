@@ -745,206 +745,320 @@ import { Link, useNavigate } from "react-router-dom";
 import api from "../../api/axios";
 import useAuthStore from "../../store/authStore";
 
+const FALLBACK_IMAGE =
+  "https://via.placeholder.com/700x700/171225/ffffff?text=AmitShop";
+
 const Wishlist = () => {
   const navigate = useNavigate();
 
-  const {
-    accessToken,
-    isAuthenticated,
-  } = useAuthStore();
+  const { accessToken, isAuthenticated } = useAuthStore();
 
-  const [wishlist, setWishlist] = useState({
-    items: [],
+  const [wishlist, setWishlist] = useState({ items: [] });
+  const [isLoading, setIsLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
+
+  // =========================================================
+  // AUTH CONFIG
+  // =========================================================
+
+  const getAuthConfig = () => ({
+    headers: accessToken
+      ? {
+          Authorization: `Bearer ${accessToken}`,
+        }
+      : {},
   });
 
-  const [isLoading, setIsLoading] = useState(true);
-  const [removingId, setRemovingId] = useState(null);
-  const [addingId, setAddingId] = useState(null);
-  const [isClearing, setIsClearing] = useState(false);
-
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  // --------------------------------------------------
-  // AUTH CONFIG
-  // --------------------------------------------------
-  const getAuthConfig = () => {
-    if (!accessToken) return {};
-
-    return {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    };
-  };
-
-  // --------------------------------------------------
+  // =========================================================
   // FETCH WISHLIST
-  // --------------------------------------------------
-  const fetchWishlist = async () => {
-    try {
-      setIsLoading(true);
-      setError("");
+  // =========================================================
 
-      const response = await api.get(
-        "/wishlist",
-        getAuthConfig()
-      );
+  useEffect(() => {
+    const loadWishlist = async () => {
+      if (!isAuthenticated || !accessToken) {
+        setIsLoading(false);
 
-      if (response.data.success) {
+        if (!isAuthenticated) {
+          navigate("/login");
+        }
+
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setErrorMessage("");
+
+        const response = await api.get(
+          "/wishlist",
+          getAuthConfig()
+        );
+
         setWishlist(
-          response.data.wishlist || {
+          response.data?.wishlist || {
             items: [],
           }
         );
-      }
-    } catch (err) {
-      console.error("Wishlist Fetch Error:", err);
+      } catch (error) {
+        console.error("Wishlist fetch error:", error);
 
-      if (err.response?.status === 401) {
-        setError("Please login to view your wishlist.");
-      } else {
-        setError(
-          err.response?.data?.message ||
+        if (error.response?.status === 401) {
+          navigate("/login");
+          return;
+        }
+
+        setErrorMessage(
+          error.response?.data?.message ||
             "Failed to load wishlist."
         );
+      } finally {
+        setIsLoading(false);
       }
-    } finally {
-      setIsLoading(false);
-    }
+    };
+
+    loadWishlist();
+  }, [isAuthenticated, accessToken, navigate]);
+
+  // =========================================================
+  // WISHLIST ITEMS
+  // =========================================================
+
+  const items = Array.isArray(wishlist?.items)
+    ? wishlist.items
+    : [];
+
+  // =========================================================
+  // HELPERS
+  // =========================================================
+
+  const getProduct = (item) => {
+    return item?.product || item;
   };
 
-  // --------------------------------------------------
-  // INITIAL LOAD
-  // --------------------------------------------------
-  useEffect(() => {
-    if (!isAuthenticated) {
-      navigate("/login");
+  const getProductId = (item) => {
+    const product = getProduct(item);
+
+    return product?._id || item?._id;
+  };
+
+  const getProductImage = (product) => {
+    if (!product) {
+      return FALLBACK_IMAGE;
+    }
+
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      const firstImage = product.images[0];
+
+      if (typeof firstImage === "string") {
+        return firstImage;
+      }
+
+      if (firstImage?.url) {
+        return firstImage.url;
+      }
+
+      if (firstImage?.secure_url) {
+        return firstImage.secure_url;
+      }
+    }
+
+    if (product.image) {
+      return product.image;
+    }
+
+    return FALLBACK_IMAGE;
+  };
+
+  const getOriginalPrice = (product) => {
+    return Number(product?.price || 0);
+  };
+
+  const getDiscountPrice = (product) => {
+    const discountPrice = Number(product?.discountPrice || 0);
+
+    if (
+      discountPrice > 0 &&
+      discountPrice < getOriginalPrice(product)
+    ) {
+      return discountPrice;
+    }
+
+    return null;
+  };
+
+  const getFinalPrice = (product) => {
+    return (
+      getDiscountPrice(product) ??
+      getOriginalPrice(product)
+    );
+  };
+
+  const getDiscountPercentage = (product) => {
+    const originalPrice = getOriginalPrice(product);
+    const discountPrice = getDiscountPrice(product);
+
+    if (!discountPrice || originalPrice <= 0) {
+      return 0;
+    }
+
+    return Math.round(
+      ((originalPrice - discountPrice) / originalPrice) * 100
+    );
+  };
+
+  const getRating = (product) => {
+    return Number(
+      product?.ratingAverage ??
+        product?.rating ??
+        product?.ratings ??
+        0
+    );
+  };
+
+  const getStock = (product) => {
+    return Number(product?.stock ?? 0);
+  };
+
+  // =========================================================
+  // REMOVE ITEM
+  // =========================================================
+
+  const handleRemove = async (productId) => {
+    if (!productId) {
       return;
     }
 
-    fetchWishlist();
-  }, [isAuthenticated]);
-
-  // --------------------------------------------------
-  // SUCCESS MESSAGE AUTO CLEAR
-  // --------------------------------------------------
-  useEffect(() => {
-    if (!success) return;
-
-    const timer = setTimeout(() => {
-      setSuccess("");
-    }, 2500);
-
-    return () => clearTimeout(timer);
-  }, [success]);
-
-  // --------------------------------------------------
-  // REMOVE FROM WISHLIST
-  // --------------------------------------------------
-  const handleRemove = async (productId) => {
     try {
-      setRemovingId(productId);
-      setError("");
-      setSuccess("");
+      setActionLoading(`remove-${productId}`);
+      setErrorMessage("");
+      setSuccessMessage("");
 
       const response = await api.delete(
         `/wishlist/${productId}`,
         getAuthConfig()
       );
 
-      if (response.data.success) {
-        setWishlist(
-          response.data.wishlist || {
-            items: [],
-          }
-        );
+      setWishlist(
+        response.data?.wishlist || {
+          items: [],
+        }
+      );
 
-        window.dispatchEvent(
-          new Event("amitshop:wishlist-updated")
-        );
+      window.dispatchEvent(
+        new Event("amitshop:wishlist-updated")
+      );
 
-        setSuccess(
-          "Product removed from wishlist."
-        );
+      setSuccessMessage("Removed from wishlist.");
+
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 2500);
+    } catch (error) {
+      console.error("Remove wishlist error:", error);
+
+      if (error.response?.status === 401) {
+        navigate("/login");
+        return;
       }
-    } catch (err) {
-      console.error("Remove Wishlist Error:", err);
 
-      setError(
-        err.response?.data?.message ||
-          "Failed to remove product."
+      setErrorMessage(
+        error.response?.data?.message ||
+          "Failed to remove item."
       );
     } finally {
-      setRemovingId(null);
+      setActionLoading("");
     }
   };
 
-  // --------------------------------------------------
+  // =========================================================
   // CLEAR WISHLIST
-  // --------------------------------------------------
+  // =========================================================
+
   const handleClearWishlist = async () => {
-    if (!wishlist.items?.length) return;
+    if (items.length === 0) {
+      return;
+    }
 
     const confirmed = window.confirm(
       "Are you sure you want to clear your entire wishlist?"
     );
 
-    if (!confirmed) return;
+    if (!confirmed) {
+      return;
+    }
 
     try {
-      setIsClearing(true);
-      setError("");
-      setSuccess("");
+      setActionLoading("clear");
+      setErrorMessage("");
+      setSuccessMessage("");
 
       const response = await api.delete(
         "/wishlist",
         getAuthConfig()
       );
 
-      if (response.data.success) {
-        setWishlist(
-          response.data.wishlist || {
-            items: [],
-          }
-        );
+      setWishlist(
+        response.data?.wishlist || {
+          items: [],
+        }
+      );
 
-        window.dispatchEvent(
-          new Event("amitshop:wishlist-updated")
-        );
+      window.dispatchEvent(
+        new Event("amitshop:wishlist-updated")
+      );
 
-        setSuccess(
-          "Wishlist cleared successfully."
-        );
+      setSuccessMessage("Wishlist cleared successfully.");
+
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 2500);
+    } catch (error) {
+      console.error("Clear wishlist error:", error);
+
+      if (error.response?.status === 401) {
+        navigate("/login");
+        return;
       }
-    } catch (err) {
-      console.error("Clear Wishlist Error:", err);
 
-      setError(
-        err.response?.data?.message ||
+      setErrorMessage(
+        error.response?.data?.message ||
           "Failed to clear wishlist."
       );
     } finally {
-      setIsClearing(false);
+      setActionLoading("");
     }
   };
 
-  // --------------------------------------------------
+  // =========================================================
   // ADD TO CART
-  // --------------------------------------------------
-  const handleAddToCart = async (product) => {
-    const productId =
-      product?.product?._id ||
-      product?._id;
+  // =========================================================
 
-    if (!productId) return;
+  const handleAddToCart = async (product) => {
+    const productId = product?._id;
+
+    if (!productId) {
+      setErrorMessage("Product information is missing.");
+      return;
+    }
+
+    if (!isAuthenticated || !accessToken) {
+      navigate("/login");
+      return;
+    }
+
+    if (getStock(product) <= 0) {
+      setErrorMessage("This product is currently out of stock.");
+      return;
+    }
 
     try {
-      setAddingId(productId);
-      setError("");
-      setSuccess("");
+      setActionLoading(`cart-${productId}`);
+      setErrorMessage("");
+      setSuccessMessage("");
 
-      const response = await api.post(
+      await api.post(
         "/cart",
         {
           productId,
@@ -953,467 +1067,530 @@ const Wishlist = () => {
         getAuthConfig()
       );
 
-      if (response.data.success) {
-        window.dispatchEvent(
-          new Event("amitshop:cart-updated")
-        );
+      window.dispatchEvent(
+        new Event("amitshop:cart-updated")
+      );
 
-        setSuccess(
-          "Product added to cart successfully."
-        );
+      setSuccessMessage("Added to cart successfully.");
+
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 2500);
+    } catch (error) {
+      console.error("Add to cart error:", error);
+
+      if (error.response?.status === 401) {
+        navigate("/login");
+        return;
       }
-    } catch (err) {
-      console.error("Add To Cart Error:", err);
 
-      setError(
-        err.response?.data?.message ||
+      setErrorMessage(
+        error.response?.data?.message ||
           "Failed to add product to cart."
       );
     } finally {
-      setAddingId(null);
+      setActionLoading("");
     }
   };
 
-  // --------------------------------------------------
-  // HELPERS
-  // --------------------------------------------------
-  const getProduct = (item) => {
-    return item?.product || item;
-  };
-
-  const getProductImage = (product) => {
-    if (!product) {
-      return "https://via.placeholder.com/600x600?text=AmitShop";
-    }
-
-    if (
-      Array.isArray(product.images) &&
-      product.images.length > 0
-    ) {
-      const firstImage = product.images[0];
-
-      if (typeof firstImage === "string") {
-        return firstImage;
-      }
-
-      return (
-        firstImage?.url ||
-        firstImage?.secure_url ||
-        "https://via.placeholder.com/600x600?text=AmitShop"
-      );
-    }
-
-    if (product.image) {
-      return product.image;
-    }
-
-    return "https://via.placeholder.com/600x600?text=AmitShop";
-  };
-
-  const getProductPrice = (product) => {
-    if (!product) return 0;
-
-    const price = Number(product.price || 0);
-    const discountPrice = Number(
-      product.discountPrice || 0
-    );
-
-    if (
-      discountPrice > 0 &&
-      discountPrice < price
-    ) {
-      return discountPrice;
-    }
-
-    return price;
-  };
-
-  const getDiscountPercent = (product) => {
-    if (!product) return 0;
-
-    const price = Number(product.price || 0);
-    const discountPrice = Number(
-      product.discountPrice || 0
-    );
-
-    if (
-      price > 0 &&
-      discountPrice > 0 &&
-      discountPrice < price
-    ) {
-      return Math.round(
-        ((price - discountPrice) / price) * 100
-      );
-    }
-
-    return 0;
-  };
-
-  const formatPrice = (price) => {
-    return `$${Number(price || 0).toFixed(2)}`;
-  };
-
-  const items = Array.isArray(wishlist.items)
-    ? wishlist.items
-    : [];
-
-  // --------------------------------------------------
+  // =========================================================
   // LOADING
-  // --------------------------------------------------
+  // =========================================================
+
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#05020b] text-white flex items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto h-14 w-14 rounded-full border-4 border-violet-500/20 border-t-violet-500 animate-spin" />
+      <div className="min-h-screen bg-[#08050f] text-white px-4 py-10">
+        <div className="mx-auto max-w-7xl">
+          <div className="mb-10">
+            <div className="h-10 w-64 rounded-xl bg-white/10 animate-pulse" />
+            <div className="mt-3 h-5 w-80 rounded-lg bg-white/5 animate-pulse" />
+          </div>
 
-          <p className="mt-5 text-sm text-white/50">
-            Loading your wishlist...
-          </p>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div
+                key={index}
+                className="overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04]"
+              >
+                <div className="aspect-square animate-pulse bg-white/10" />
+
+                <div className="space-y-3 p-5">
+                  <div className="h-5 w-3/4 rounded bg-white/10 animate-pulse" />
+                  <div className="h-4 w-1/2 rounded bg-white/10 animate-pulse" />
+                  <div className="h-10 w-full rounded-xl bg-white/10 animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
-  // --------------------------------------------------
-  // MAIN UI
-  // --------------------------------------------------
+  // =========================================================
+  // STATS
+  // =========================================================
+
+  const totalItems = items.length;
+
+  const inStockItems = items.filter((item) => {
+    const product = getProduct(item);
+    return getStock(product) > 0;
+  }).length;
+
+  const outOfStockItems = totalItems - inStockItems;
+
+  // =========================================================
+  // UI
+  // =========================================================
+
   return (
-    <div className="min-h-screen bg-[#05020b] text-white">
-      {/* Background Glow */}
-      <div className="pointer-events-none fixed inset-0 overflow-hidden">
-        <div className="absolute -top-40 left-1/2 h-96 w-96 -translate-x-1/2 rounded-full bg-violet-700/20 blur-[120px]" />
+    <div className="relative min-h-screen overflow-hidden bg-[#08050f] text-white">
+      {/* =====================================================
+          ANIMATION STYLES
+      ====================================================== */}
 
-        <div className="absolute top-[45%] -left-40 h-80 w-80 rounded-full bg-fuchsia-700/10 blur-[120px]" />
+      <style>{`
+        @keyframes wishlistFadeUp {
+          0% {
+            opacity: 0;
+            transform: translateY(24px) scale(0.97);
+          }
 
-        <div className="absolute bottom-0 right-0 h-96 w-96 rounded-full bg-purple-700/10 blur-[120px]" />
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        @keyframes wishlistFloat {
+          0%,
+          100% {
+            transform: translateY(0) rotate(0deg);
+          }
+
+          50% {
+            transform: translateY(-10px) rotate(4deg);
+          }
+        }
+
+        @keyframes wishlistGlow {
+          0%,
+          100% {
+            opacity: 0.25;
+            transform: scale(1);
+          }
+
+          50% {
+            opacity: 0.55;
+            transform: scale(1.12);
+          }
+        }
+
+        @keyframes wishlistPulse {
+          0%,
+          100% {
+            transform: scale(1);
+          }
+
+          50% {
+            transform: scale(1.08);
+          }
+        }
+
+        @keyframes wishlistShimmer {
+          0% {
+            background-position: -200% center;
+          }
+
+          100% {
+            background-position: 200% center;
+          }
+        }
+
+        .wishlist-card-enter {
+          animation: wishlistFadeUp
+            0.65s
+            cubic-bezier(0.22, 1, 0.36, 1)
+            both;
+        }
+
+        .wishlist-float {
+          animation: wishlistFloat 5s ease-in-out infinite;
+        }
+
+        .wishlist-glow {
+          animation: wishlistGlow 5s ease-in-out infinite;
+        }
+
+        .wishlist-pulse {
+          animation: wishlistPulse 2.5s ease-in-out infinite;
+        }
+
+        .wishlist-shimmer {
+          background-size: 200% auto;
+          animation: wishlistShimmer 4s linear infinite;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .wishlist-card-enter,
+          .wishlist-float,
+          .wishlist-glow,
+          .wishlist-pulse,
+          .wishlist-shimmer {
+            animation: none !important;
+          }
+        }
+      `}</style>
+
+      {/* =====================================================
+          BACKGROUND GLOW
+      ====================================================== */}
+
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="wishlist-glow absolute -left-32 top-20 h-80 w-80 rounded-full bg-purple-600/20 blur-3xl" />
+
+        <div
+          className="wishlist-glow absolute -right-32 top-80 h-96 w-96 rounded-full bg-fuchsia-600/10 blur-3xl"
+          style={{ animationDelay: "1.2s" }}
+        />
+
+        <div
+          className="wishlist-glow absolute bottom-0 left-1/2 h-80 w-80 -translate-x-1/2 rounded-full bg-indigo-600/10 blur-3xl"
+          style={{ animationDelay: "2s" }}
+        />
       </div>
 
-      <div className="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      {/* =====================================================
+          MAIN CONTENT
+      ====================================================== */}
+
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        {/* ===================================================
+            HEADER
+        ==================================================== */}
+
+        <div className="mb-8 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-2 text-xs font-medium text-violet-300">
-              <span className="text-base">♡</span>
-              Your Collection
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-purple-400/20 bg-purple-500/10 px-4 py-2 text-sm text-purple-200 backdrop-blur-xl">
+              <span className="h-2 w-2 rounded-full bg-purple-400 wishlist-pulse" />
+              Your Personal Collection
             </div>
 
             <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
-              My Wishlist
+              My{" "}
+              <span className="bg-gradient-to-r from-purple-300 via-fuchsia-300 to-indigo-300 bg-clip-text text-transparent">
+                Wishlist
+              </span>
             </h1>
 
-            <p className="mt-3 max-w-xl text-sm leading-6 text-white/45 sm:text-base">
-              Save your favorite products and keep
-              everything you love in one place.
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/55 sm:text-base">
+              Save the products you love and keep them ready
+              for your next purchase.
             </p>
           </div>
 
           {items.length > 0 && (
             <button
+              type="button"
               onClick={handleClearWishlist}
-              disabled={isClearing}
-              className="group inline-flex items-center justify-center gap-2 rounded-xl border border-red-500/20 bg-red-500/5 px-5 py-3 text-sm font-semibold text-red-300 transition hover:border-red-500/40 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={actionLoading === "clear"}
+              className="group inline-flex items-center justify-center gap-2 rounded-2xl border border-red-400/20 bg-red-500/10 px-5 py-3 text-sm font-semibold text-red-300 transition duration-300 hover:-translate-y-1 hover:border-red-400/40 hover:bg-red-500/15 hover:text-red-200 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <span>
-                {isClearing ? "Clearing..." : "Clear Wishlist"}
+              <span className="transition-transform duration-300 group-hover:rotate-12">
+                🗑️
               </span>
+
+              {actionLoading === "clear"
+                ? "Clearing..."
+                : "Clear Wishlist"}
             </button>
           )}
         </div>
 
-        {/* Success */}
-        {success && (
-          <div className="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-300">
-            ✓ {success}
+        {/* ===================================================
+            ALERTS
+        ==================================================== */}
+
+        {errorMessage && (
+          <div className="mb-6 rounded-2xl border border-red-400/20 bg-red-500/10 px-5 py-4 text-sm text-red-200 shadow-lg shadow-red-950/20">
+            <div className="flex items-start gap-3">
+              <span>⚠️</span>
+              <span>{errorMessage}</span>
+            </div>
           </div>
         )}
 
-        {/* Error */}
-        {error && (
-          <div className="mb-6 rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-4 text-sm text-red-300">
-            {error}
+        {successMessage && (
+          <div className="mb-6 rounded-2xl border border-emerald-400/20 bg-emerald-500/10 px-5 py-4 text-sm text-emerald-200 shadow-lg shadow-emerald-950/20">
+            <div className="flex items-center gap-3">
+              <span className="wishlist-pulse">✓</span>
+              <span>{successMessage}</span>
+            </div>
           </div>
         )}
 
-        {/* Empty Wishlist */}
+        {/* ===================================================
+            STATS
+        ==================================================== */}
+
+        {items.length > 0 && (
+          <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="group rounded-2xl border border-white/10 bg-white/[0.04] p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-purple-400/20 hover:bg-white/[0.06]">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+                Total Saved
+              </p>
+
+              <p className="mt-2 text-3xl font-black text-white">
+                {totalItems}
+              </p>
+            </div>
+
+            <div className="group rounded-2xl border border-emerald-400/10 bg-emerald-500/[0.04] p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-emerald-400/20">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+                In Stock
+              </p>
+
+              <p className="mt-2 text-3xl font-black text-emerald-300">
+                {inStockItems}
+              </p>
+            </div>
+
+            <div className="group rounded-2xl border border-red-400/10 bg-red-500/[0.04] p-5 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-red-400/20">
+              <p className="text-xs uppercase tracking-[0.2em] text-white/40">
+                Out of Stock
+              </p>
+
+              <p className="mt-2 text-3xl font-black text-red-300">
+                {outOfStockItems}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ===================================================
+            EMPTY STATE
+        ==================================================== */}
+
         {items.length === 0 ? (
-          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.03] px-6 py-20 text-center backdrop-blur-xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.06] via-transparent to-fuchsia-500/[0.04]" />
+          <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-white/[0.035] px-6 py-20 text-center backdrop-blur-2xl sm:px-10">
+            <div className="pointer-events-none absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-600/10 blur-3xl" />
 
-            <div className="relative mx-auto max-w-md">
-              <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full border border-violet-500/20 bg-violet-500/10 text-5xl text-violet-300 shadow-2xl shadow-violet-900/20">
+            <div className="relative z-10">
+              <div className="wishlist-float mx-auto mb-7 flex h-24 w-24 items-center justify-center rounded-3xl border border-purple-400/20 bg-purple-500/10 text-5xl shadow-2xl shadow-purple-950/30">
                 ♡
               </div>
 
-              <h2 className="mt-7 text-2xl font-bold">
+              <h2 className="text-2xl font-bold sm:text-3xl">
                 Your wishlist is empty
               </h2>
 
-              <p className="mt-3 text-sm leading-6 text-white/45">
-                You haven't saved any products yet.
-                Explore AmitShop and add your favorite
-                products here.
+              <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-white/45">
+                You haven't saved any products yet. Explore
+                AmitShop and add your favorite products here.
               </p>
 
               <Link
                 to="/products"
-                className="mt-8 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-7 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-900/30 transition hover:-translate-y-0.5 hover:shadow-violet-900/50"
+                className="wishlist-shimmer mt-8 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-purple-600 via-fuchsia-500 to-indigo-600 px-7 py-3.5 text-sm font-bold text-white shadow-xl shadow-purple-950/30 transition duration-300 hover:-translate-y-1 hover:scale-[1.02]"
               >
-                Explore Products →
+                Explore Products
+                <span className="transition-transform duration-300 group-hover:translate-x-1">
+                  →
+                </span>
               </Link>
             </div>
           </div>
         ) : (
-          <>
-            {/* Wishlist Stats */}
-            <div className="mb-7 grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-xl">
-                <p className="text-xs uppercase tracking-wider text-white/35">
-                  Saved Items
-                </p>
+          /* =================================================
+             PRODUCT GRID
+          ================================================== */
 
-                <p className="mt-2 text-2xl font-black">
-                  {items.length}
-                </p>
-              </div>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {items.map((item, index) => {
+              const product = getProduct(item);
+              const productId = getProductId(item);
 
-              <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-xl">
-                <p className="text-xs uppercase tracking-wider text-white/35">
-                  Available
-                </p>
+              const originalPrice = getOriginalPrice(product);
+              const discountPrice = getDiscountPrice(product);
+              const finalPrice = getFinalPrice(product);
+              const discountPercentage =
+                getDiscountPercentage(product);
 
-                <p className="mt-2 text-2xl font-black text-emerald-300">
-                  {
-                    items.filter((item) => {
-                      const product = getProduct(item);
-                      return Number(product?.stock || 0) > 0;
-                    }).length
-                  }
-                </p>
-              </div>
+              const rating = getRating(product);
+              const stock = getStock(product);
 
-              <div className="hidden rounded-2xl border border-white/10 bg-white/[0.03] p-5 backdrop-blur-xl sm:block">
-                <p className="text-xs uppercase tracking-wider text-white/35">
-                  On Sale
-                </p>
+              const image = getProductImage(product);
 
-                <p className="mt-2 text-2xl font-black text-violet-300">
-                  {
-                    items.filter(
-                      (item) =>
-                        getDiscountPercent(
-                          getProduct(item)
-                        ) > 0
-                    ).length
-                  }
-                </p>
-              </div>
-            </div>
-
-            {/* Product Grid */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {items.map((item, index) => {
-                const product = getProduct(item);
-
-                const productId = product?._id;
-
-                const price =
-                  getProductPrice(product);
-
-                const originalPrice = Number(
-                  product?.price || 0
-                );
-
-                const discount =
-                  getDiscountPercent(product);
-
-                const stock = Number(
-                  product?.stock || 0
-                );
-
-                const isOutOfStock = stock <= 0;
-
-                return (
-                  <div
-                    key={
-                      productId ||
-                      item?._id ||
-                      index
-                    }
-                    className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/[0.035] shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-violet-500/30 hover:bg-white/[0.05]"
-                  >
-                    {/* Image */}
+              return (
+                <article
+                  key={productId || item?._id || index}
+                  className="wishlist-card-enter group overflow-hidden rounded-3xl border border-white/10 bg-white/[0.045] shadow-2xl shadow-black/20 backdrop-blur-xl transition duration-500 hover:-translate-y-2 hover:border-purple-400/25 hover:bg-white/[0.065] hover:shadow-purple-950/20"
+                  style={{
+                    animationDelay: `${index * 90}ms`,
+                  }}
+                >
+                  {/* IMAGE */}
+                  <div className="relative overflow-hidden">
                     <Link
-                      to={
-                        productId
-                          ? `/products/${productId}`
-                          : "/products"
-                      }
-                      className="relative block aspect-square overflow-hidden bg-black/20"
+                      to={`/products/${productId}`}
+                      className="block"
                     >
-                      <img
-                        src={getProductImage(product)}
-                        alt={
-                          product?.name ||
-                          "AmitShop Product"
-                        }
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                        onError={(e) => {
-                          e.currentTarget.src =
-                            "https://via.placeholder.com/600x600?text=AmitShop";
-                        }}
-                      />
-
-                      {/* Gradient */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
-
-                      {/* Discount */}
-                      {discount > 0 && (
-                        <div className="absolute left-4 top-4 rounded-full bg-emerald-500 px-3 py-1 text-xs font-black text-black shadow-lg">
-                          -{discount}%
-                        </div>
-                      )}
-
-                      {/* Wishlist Heart */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleRemove(productId);
-                        }}
-                        disabled={
-                          removingId === productId
-                        }
-                        className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/40 text-xl text-red-300 backdrop-blur-md transition hover:scale-110 hover:bg-red-500/20 disabled:opacity-50"
-                        aria-label="Remove from wishlist"
-                      >
-                        {removingId === productId
-                          ? "..."
-                          : "♥"}
-                      </button>
-
-                      {/* Stock */}
-                      <div className="absolute bottom-4 left-4">
-                        {isOutOfStock ? (
-                          <span className="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-300 backdrop-blur-md">
-                            Out of stock
-                          </span>
-                        ) : (
-                          <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 backdrop-blur-md">
-                            {stock} in stock
-                          </span>
-                        )}
+                      <div className="aspect-square overflow-hidden bg-[#120c1f]">
+                        <img
+                          src={image}
+                          alt={product?.name || "Product"}
+                          onError={(event) => {
+                            event.currentTarget.src =
+                              FALLBACK_IMAGE;
+                          }}
+                          className="h-full w-full object-cover transition duration-700 ease-out group-hover:scale-110"
+                        />
                       </div>
                     </Link>
 
-                    {/* Content */}
-                    <div className="p-5">
-                      <div className="mb-2 flex items-center justify-between gap-3">
-                        <span className="text-xs font-medium uppercase tracking-wider text-violet-300/70">
-                          {product?.brand ||
-                            product?.category ||
-                            "AmitShop"}
+                    {/* IMAGE OVERLAY */}
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-70" />
+
+                    {/* DISCOUNT */}
+                    {discountPercentage > 0 && (
+                      <div className="absolute left-4 top-4 rounded-full border border-emerald-300/20 bg-emerald-400/15 px-3 py-1.5 text-xs font-bold text-emerald-200 backdrop-blur-xl">
+                        -{discountPercentage}%
+                      </div>
+                    )}
+
+                    {/* REMOVE */}
+                    <button
+                      type="button"
+                      onClick={() => handleRemove(productId)}
+                      disabled={
+                        actionLoading === `remove-${productId}`
+                      }
+                      aria-label="Remove from wishlist"
+                      className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/40 text-white/80 backdrop-blur-xl transition duration-300 hover:scale-110 hover:border-red-400/30 hover:bg-red-500/20 hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {actionLoading ===
+                      `remove-${productId}` ? (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                      ) : (
+                        "♥"
+                      )}
+                    </button>
+
+                    {/* STOCK */}
+                    <div className="absolute bottom-4 left-4">
+                      {stock > 0 ? (
+                        <span className="rounded-full border border-emerald-400/20 bg-emerald-500/15 px-3 py-1.5 text-xs font-semibold text-emerald-200 backdrop-blur-xl">
+                          In Stock
                         </span>
-
-                        {product?.rating !== undefined && (
-                          <span className="text-xs text-amber-300">
-                            ★{" "}
-                            {Number(
-                              product.rating || 0
-                            ).toFixed(1)}
-                          </span>
-                        )}
-                      </div>
-
-                      <Link
-                        to={
-                          productId
-                            ? `/products/${productId}`
-                            : "/products"
-                        }
-                      >
-                        <h3 className="min-h-[48px] text-base font-bold leading-6 text-white transition group-hover:text-violet-300">
-                          {product?.name ||
-                            "Product"}
-                        </h3>
-                      </Link>
-
-                      {/* Price */}
-                      <div className="mt-4 flex items-center gap-3">
-                        <span className="text-xl font-black">
-                          {formatPrice(price)}
+                      ) : (
+                        <span className="rounded-full border border-red-400/20 bg-red-500/15 px-3 py-1.5 text-xs font-semibold text-red-200 backdrop-blur-xl">
+                          Out of Stock
                         </span>
-
-                        {discount > 0 &&
-                          originalPrice > price && (
-                            <span className="text-sm text-white/30 line-through">
-                              {formatPrice(
-                                originalPrice
-                              )}
-                            </span>
-                          )}
-                      </div>
-
-                      {/* Actions */}
-                      <div className="mt-5 flex gap-2">
-                        <button
-                          onClick={() =>
-                            handleAddToCart(product)
-                          }
-                          disabled={
-                            isOutOfStock ||
-                            addingId === productId
-                          }
-                          className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-4 py-3 text-sm font-bold text-white shadow-lg shadow-violet-900/20 transition hover:-translate-y-0.5 hover:shadow-violet-900/40 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:translate-y-0"
-                        >
-                          {addingId === productId
-                            ? "Adding..."
-                            : isOutOfStock
-                            ? "Out of Stock"
-                            : "Add to Cart"}
-                        </button>
-
-                        <button
-                          onClick={() =>
-                            handleRemove(productId)
-                          }
-                          disabled={
-                            removingId === productId
-                          }
-                          className="flex h-12 w-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-lg text-white/60 transition hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-300 disabled:opacity-40"
-                          aria-label="Remove product"
-                        >
-                          {removingId === productId
-                            ? "..."
-                            : "×"}
-                        </button>
-                      </div>
+                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
 
-            {/* Bottom CTA */}
-            <div className="mt-10 flex flex-col items-center justify-between gap-5 rounded-3xl border border-violet-500/10 bg-gradient-to-r from-violet-500/[0.08] to-fuchsia-500/[0.05] p-6 sm:flex-row">
-              <div>
-                <h3 className="font-bold">
-                  Looking for more?
-                </h3>
+                  {/* CONTENT */}
+                  <div className="p-5">
+                    {/* CATEGORY */}
+                    {product?.category && (
+                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-purple-300/70">
+                        {typeof product.category === "object"
+                          ? product.category?.name
+                          : product.category}
+                      </p>
+                    )}
 
-                <p className="mt-1 text-sm text-white/40">
-                  Discover more products from AmitShop.
-                </p>
-              </div>
+                    {/* NAME */}
+                    <Link
+                      to={`/products/${productId}`}
+                      className="line-clamp-2 min-h-[3.5rem] text-lg font-bold leading-7 text-white transition duration-300 hover:text-purple-300"
+                    >
+                      {product?.name || "Unnamed Product"}
+                    </Link>
 
-              <Link
-                to="/products"
-                className="rounded-xl border border-violet-500/20 bg-violet-500/10 px-6 py-3 text-sm font-bold text-violet-200 transition hover:bg-violet-500/20"
-              >
-                Continue Shopping →
-              </Link>
-            </div>
-          </>
+                    {/* RATING */}
+                    {rating > 0 && (
+                      <div className="mt-3 flex items-center gap-2">
+                        <div className="flex items-center gap-1 text-sm text-yellow-300">
+                          <span>★</span>
+                          <span>{rating.toFixed(1)}</span>
+                        </div>
+
+                        <span className="text-xs text-white/30">
+                          Product rating
+                        </span>
+                      </div>
+                    )}
+
+                    {/* PRICE */}
+                    <div className="mt-4 flex items-end gap-2">
+                      <span className="text-2xl font-black text-white">
+                        ${finalPrice.toFixed(2)}
+                      </span>
+
+                      {discountPrice && (
+                        <span className="pb-0.5 text-sm text-white/35 line-through">
+                          ${originalPrice.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* ACTIONS */}
+                    <div className="mt-5 flex gap-2">
+                      <Link
+                        to={`/products/${productId}`}
+                        className="flex flex-1 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05] px-3 py-3 text-sm font-semibold text-white/80 transition duration-300 hover:-translate-y-0.5 hover:border-purple-400/20 hover:bg-purple-500/10 hover:text-white"
+                      >
+                        View
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => handleAddToCart(product)}
+                        disabled={
+                          stock <= 0 ||
+                          actionLoading === `cart-${productId}`
+                        }
+                        className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-fuchsia-600 px-3 py-3 text-sm font-bold text-white shadow-lg shadow-purple-950/30 transition duration-300 hover:-translate-y-0.5 hover:from-purple-500 hover:to-fuchsia-500 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {actionLoading === `cart-${productId}` ? (
+                          <>
+                            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                            Adding...
+                          </>
+                        ) : (
+                          <>
+                            <span>🛒</span>
+                            Add to Cart
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ===================================================
+            FOOTER CTA
+        ==================================================== */}
+
+        {items.length > 0 && (
+          <div className="mt-12 flex justify-center">
+            <Link
+              to="/products"
+              className="group inline-flex items-center gap-3 rounded-2xl border border-purple-400/20 bg-purple-500/10 px-6 py-3.5 text-sm font-semibold text-purple-200 backdrop-blur-xl transition duration-300 hover:-translate-y-1 hover:border-purple-400/40 hover:bg-purple-500/15"
+            >
+              Continue Shopping
+              <span className="transition-transform duration-300 group-hover:translate-x-1">
+                →
+              </span>
+            </Link>
+          </div>
         )}
       </div>
     </div>

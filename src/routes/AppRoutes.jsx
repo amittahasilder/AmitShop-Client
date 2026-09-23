@@ -1,3 +1,4 @@
+
 import {
   BrowserRouter,
   Routes,
@@ -49,6 +50,13 @@ import Cart from "../pages/Cart/Cart";
 // =========================================================
 
 import Checkout from "../pages/Checkout/Checkout";
+
+// =========================================================
+// PAYMENT
+// =========================================================
+
+import PaymentSuccess from "../pages/Payment/PaymentSuccess";
+import PaymentCancel from "../pages/Payment/PaymentCancel";
 
 // =========================================================
 // ORDERS
@@ -219,6 +227,26 @@ const AppRoutes = () => {
           element={
             <Placeholder title="Contact" />
           }
+        />
+
+        {/* =================================================
+            STRIPE PAYMENT SUCCESS
+            F28.3
+        ================================================= */}
+
+        <Route
+          path="/payment/success"
+          element={<PaymentSuccess />}
+        />
+
+        {/* =================================================
+            STRIPE PAYMENT CANCEL
+            F28.3
+        ================================================= */}
+
+        <Route
+          path="/payment/cancel"
+          element={<PaymentCancel />}
         />
 
         {/* =================================================
@@ -457,3 +485,4 @@ const AppRoutes = () => {
 };
 
 export default AppRoutes;
+

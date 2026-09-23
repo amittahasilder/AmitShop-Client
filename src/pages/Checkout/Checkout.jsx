@@ -22,6 +22,17 @@ const Checkout = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // ==========================================
+  // PAYMENT METHOD
+  // ==========================================
+
+  const [paymentMethod, setPaymentMethod] =
+    useState("COD");
+
+  // ==========================================
+  // SHIPPING FORM
+  // ==========================================
+
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -213,7 +224,6 @@ const Checkout = () => {
       0
     );
 
-    // MUST MATCH BACKEND
     const shipping =
       subtotal === 0
         ? 0
@@ -304,7 +314,11 @@ const Checkout = () => {
     try {
       setIsPlacingOrder(true);
 
-      const response = await api.post(
+      // ========================================
+      // CREATE ORDER
+      // ========================================
+
+      const orderResponse = await api.post(
         "/orders",
         {
           shippingAddress: {
@@ -330,8 +344,7 @@ const Checkout = () => {
               form.country.trim(),
           },
 
-          // Stripe will be connected later
-          paymentMethod: "COD",
+          paymentMethod,
 
           note:
             form.note.trim(),
@@ -339,24 +352,61 @@ const Checkout = () => {
         getAuthConfig()
       );
 
-      if (response.data.success) {
-        const order =
-          response.data.order;
-
-        setSuccess(
-          `Order placed successfully! Order ID: ${order?._id}`
-        );
-
-        // Backend already clears the cart.
-        setCart({
-          items: [],
-        });
-      } else {
+      if (!orderResponse.data.success) {
         setError(
-          response.data.message ||
-            "Unable to place order."
+          orderResponse.data.message ||
+            "Unable to create order."
         );
+
+        return;
       }
+
+      const order =
+        orderResponse.data.order;
+
+      // ========================================
+      // STRIPE PAYMENT
+      // ========================================
+
+      if (paymentMethod === "STRIPE") {
+        const stripeResponse =
+          await api.post(
+            "/payments/create-checkout-session",
+            {
+              orderId: order._id,
+            },
+            getAuthConfig()
+          );
+
+        if (
+          stripeResponse.data.success &&
+          stripeResponse.data.url
+        ) {
+          window.location.href =
+            stripeResponse.data.url;
+
+          return;
+        }
+
+        setError(
+          stripeResponse.data.message ||
+            "Unable to start Stripe checkout."
+        );
+
+        return;
+      }
+
+      // ========================================
+      // COD SUCCESS
+      // ========================================
+
+      setSuccess(
+        `Order placed successfully! Order ID: ${order?._id}`
+      );
+
+      setCart({
+        items: [],
+      });
     } catch (err) {
       console.error(
         "Place Order Error:",
@@ -461,10 +511,10 @@ const Checkout = () => {
               </Link>
 
               <Link
-                to="/cart"
+                to="/orders"
                 className="rounded-2xl border border-white/10 bg-white/[0.03] px-7 py-4 text-sm font-bold text-white/70 transition-all hover:border-violet-400/20 hover:text-white"
               >
-                View Cart
+                View My Orders
               </Link>
             </div>
           </div>
@@ -702,33 +752,110 @@ const Checkout = () => {
                 Payment Method
               </h2>
 
-              <div className="mt-6 rounded-2xl border border-violet-400/30 bg-violet-500/[0.08] p-5">
-                <div className="flex items-start gap-4">
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
 
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
-                    💵
+                {/* COD */}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPaymentMethod("COD")
+                  }
+                  className={`rounded-2xl border p-5 text-left transition-all ${
+                    paymentMethod === "COD"
+                      ? "border-violet-400/40 bg-violet-500/[0.10] shadow-[0_10px_35px_rgba(124,58,237,0.10)]"
+                      : "border-white/10 bg-white/[0.02] hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
+                      💵
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-black">
+                        Cash on Delivery
+                      </p>
+
+                      <p className="mt-1 text-xs leading-5 text-white/35">
+                        Pay when your order arrives.
+                      </p>
+                    </div>
+
                   </div>
 
-                  <div>
-                    <p className="text-sm font-black">
-                      Cash on Delivery
-                    </p>
+                  <div className="mt-4 flex items-center gap-2">
+                    <span
+                      className={`h-4 w-4 rounded-full border ${
+                        paymentMethod === "COD"
+                          ? "border-violet-400 bg-violet-500"
+                          : "border-white/20"
+                      }`}
+                    />
 
-                    <p className="mt-1 text-xs leading-5 text-white/35">
-                      Pay when your order arrives.
-                    </p>
+                    <span className="text-[11px] text-white/30">
+                      {paymentMethod === "COD"
+                        ? "Selected"
+                        : "Select COD"}
+                    </span>
+                  </div>
+                </button>
+
+                {/* STRIPE */}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPaymentMethod("STRIPE")
+                  }
+                  className={`rounded-2xl border p-5 text-left transition-all ${
+                    paymentMethod === "STRIPE"
+                      ? "border-fuchsia-400/40 bg-fuchsia-500/[0.10] shadow-[0_10px_35px_rgba(217,70,239,0.10)]"
+                      : "border-white/10 bg-white/[0.02] hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-start gap-4">
+
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-fuchsia-500/15 text-fuchsia-300">
+                      💳
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-black">
+                        Stripe Payment
+                      </p>
+
+                      <p className="mt-1 text-xs leading-5 text-white/35">
+                        Pay securely using your card.
+                      </p>
+                    </div>
+
                   </div>
 
-                  <div className="ml-auto flex h-5 w-5 items-center justify-center rounded-full border border-violet-400 bg-violet-500">
-                    <span className="h-2 w-2 rounded-full bg-white" />
-                  </div>
+                  <div className="mt-4 flex items-center gap-2">
+                    <span
+                      className={`h-4 w-4 rounded-full border ${
+                        paymentMethod === "STRIPE"
+                          ? "border-fuchsia-400 bg-fuchsia-500"
+                          : "border-white/20"
+                      }`}
+                    />
 
-                </div>
+                    <span className="text-[11px] text-white/30">
+                      {paymentMethod === "STRIPE"
+                        ? "Selected"
+                        : "Select Stripe"}
+                    </span>
+                  </div>
+                </button>
+
               </div>
 
-              <div className="mt-4 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs leading-5 text-white/25">
-                Stripe online payment will be connected
-                in the payment integration milestone.
+              <div className="mt-5 rounded-2xl border border-white/5 bg-white/[0.02] p-4 text-xs leading-5 text-white/25">
+                {paymentMethod === "STRIPE"
+                  ? "You will be redirected to Stripe's secure checkout page to complete your payment."
+                  : "Pay the order amount when your order is delivered."}
               </div>
             </div>
           </section>
@@ -895,11 +1022,17 @@ const Checkout = () => {
                   {isPlacingOrder ? (
                     <>
                       <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                      Placing Order...
+
+                      {paymentMethod === "STRIPE"
+                        ? "Opening Stripe..."
+                        : "Placing Order..."}
                     </>
                   ) : (
                     <>
-                      Place Order
+                      {paymentMethod === "STRIPE"
+                        ? "Pay with Stripe"
+                        : "Place Order"}
+
                       <span className="transition-transform duration-300 group-hover:translate-x-1">
                         →
                       </span>
